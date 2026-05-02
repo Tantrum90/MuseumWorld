@@ -1,0 +1,281 @@
+# MuseumWorld configuration
+
+# Which worlds should be treated as read-only
+locked-worlds: []
+# Example:
+# locked-worlds:
+#   - overworld
+#   - the_nether
+#   - the_end
+#   - Lobby
+
+# Notify players when an action is blocked
+notify-player: true
+
+# Language file to use for messages (messages_en.yml, messages_mk.yml)
+language: en
+
+# If true, MuseumWorld will print protection debug information to the console.
+# Useful for testing why something is blocked or allowed.
+debug-mode: false
+
+# Message throttling to prevent chat spam
+messages:
+  # Minimum time (ms) between repeating the same message to the same player.
+  # Some events (like repeated interactions) can otherwise spam chat.
+  cooldown-ms: 2500
+
+# Block damaging ANY entities in locked worlds
+block-entity-damage: true
+
+# Legacy setting kept for compatibility: block damage to friendly/passive mobs
+block-friendly-damage: true
+
+# Additionally block damaging these entity types (even if block-entity-damage is false)
+blocked-entity-types:
+  - ALLAY
+  - ARMADILLO
+  - AXOLOTL
+  - BAT
+  - BEE
+  - CAMEL
+  - CAT
+  - CHICKEN
+  - COD
+  - COPPER_GOLEM
+  - COW
+  - DOLPHIN
+  - DONKEY
+  - FOX
+  - FROG
+  - GLOW_SQUID
+  - GOAT
+  - HAPPY_GHAST
+  - HORSE
+  - IRON_GOLEM
+  - LLAMA
+  - MANNEQUIN
+  - MOOSHROOM
+  - MULE
+  - NAUTILUS
+  - OCELOT
+  - PANDA
+  - PARROT
+  - PIG
+  - POLAR_BEAR
+  - PUFFERFISH
+  - RABBIT
+  - SALMON
+  - SHEEP
+  - SKELETON_HORSE
+  - SNIFFER
+  - SNOW_GOLEM
+  - SQUID
+  - STRIDER
+  - TADPOLE
+  - TRADER_LLAMA
+  - TROPICAL_FISH
+  - TURTLE
+  - VILLAGER
+  - WANDERING_TRADER
+  - WOLF
+  - ZOMBIE_HORSE
+
+# Block interactions with "read-only" blocks/entities (see lists below)
+block-readonly-interactions: true
+
+# Automatically treat common containers/interactive blocks as read-only
+readonly-blocks-auto: true
+
+# Extra blocks to treat as read-only (Material names)
+readonly-blocks:
+  # Containers / storage
+  - CHEST
+  - TRAPPED_CHEST
+  - BARREL
+  - ENDER_CHEST
+  - HOPPER
+  - DISPENSER
+  - DROPPER
+  - CHISELED_BOOKSHELF
+  - DECORATED_POT
+
+  # Shulker boxes
+  - SHULKER_BOX
+  - WHITE_SHULKER_BOX
+  - ORANGE_SHULKER_BOX
+  - MAGENTA_SHULKER_BOX
+  - LIGHT_BLUE_SHULKER_BOX
+  - YELLOW_SHULKER_BOX
+  - LIME_SHULKER_BOX
+  - PINK_SHULKER_BOX
+  - GRAY_SHULKER_BOX
+  - LIGHT_GRAY_SHULKER_BOX
+  - CYAN_SHULKER_BOX
+  - PURPLE_SHULKER_BOX
+  - BLUE_SHULKER_BOX
+  - BROWN_SHULKER_BOX
+  - GREEN_SHULKER_BOX
+  - RED_SHULKER_BOX
+  - BLACK_SHULKER_BOX
+
+  # Furnaces / brewing
+  - FURNACE
+  - BLAST_FURNACE
+  - SMOKER
+  - BREWING_STAND
+
+  # Workstations / utility blocks
+  - CRAFTING_TABLE
+  - CRAFTER
+  - ENCHANTING_TABLE
+  - ANVIL
+  - CHIPPED_ANVIL
+  - DAMAGED_ANVIL
+  - GRINDSTONE
+  - LOOM
+  - CARTOGRAPHY_TABLE
+  - SMITHING_TABLE
+  - STONECUTTER
+  - FLETCHING_TABLE
+  - BEACON
+
+  # Redstone / interactive
+  - JUKEBOX
+  - NOTE_BLOCK
+  - TRIPWIRE_HOOK
+  - LEVER
+  - DAYLIGHT_DETECTOR
+  - TARGET
+  - REPEATER
+  - COMPARATOR
+  - CALIBRATED_SCULK_SENSOR
+  - SCULK_SENSOR
+  - SCULK_SHRIEKER
+
+  # Books / lecterns / special interaction
+  - LECTERN
+  - COMPOSTER
+  - BELL
+  - RESPAWN_ANCHOR
+  - LODESTONE
+  - VAULT
+  - TRIAL_SPAWNER
+
+  # Copper bulbs / interactive light-style blocks
+  - COPPER_BULB
+  - EXPOSED_COPPER_BULB
+  - WEATHERED_COPPER_BULB
+  - OXIDIZED_COPPER_BULB
+  - WAXED_COPPER_BULB
+  - WAXED_EXPOSED_COPPER_BULB
+  - WAXED_WEATHERED_COPPER_BULB
+  - WAXED_OXIDIZED_COPPER_BULB
+
+# Automatically treat common interactive entities as read-only
+readonly-entities-auto: true
+
+# Extra entities to treat as read-only (EntityType names)
+readonly-entities:
+  - ITEM_FRAME
+  - GLOW_ITEM_FRAME
+  - ARMOR_STAND
+
+  # Boats / rafts
+  - OAK_BOAT
+  - SPRUCE_BOAT
+  - BIRCH_BOAT
+  - JUNGLE_BOAT
+  - ACACIA_BOAT
+  - DARK_OAK_BOAT
+  - MANGROVE_BOAT
+  - CHERRY_BOAT
+  - PALE_OAK_BOAT
+  - BAMBOO_RAFT
+
+  # Chest boats / chest rafts
+  - OAK_CHEST_BOAT
+  - SPRUCE_CHEST_BOAT
+  - BIRCH_CHEST_BOAT
+  - JUNGLE_CHEST_BOAT
+  - ACACIA_CHEST_BOAT
+  - DARK_OAK_CHEST_BOAT
+  - MANGROVE_CHEST_BOAT
+  - CHERRY_CHEST_BOAT
+  - PALE_OAK_CHEST_BOAT
+  - BAMBOO_CHEST_RAFT
+
+  # Minecarts
+  - MINECART
+  - CHEST_MINECART
+  - HOPPER_MINECART
+  - FURNACE_MINECART
+  - TNT_MINECART
+  - COMMAND_BLOCK_MINECART
+  - SPAWNER_MINECART
+
+  # Hanging entities (optional, but typical for “museum” worlds)
+  - PAINTING
+  - LEASH_KNOT
+  - MANNEQUIN
+
+# Blocks that players can open and view, but cannot modify.
+# These blocks are allowed to open, while item movement is blocked separately.
+# If a block is removed from this list but remains in readonly-blocks,
+# right-click interaction with that block will be fully blocked.
+view-only-containers:
+  - CHEST
+  - TRAPPED_CHEST
+  - BARREL
+  - ENDER_CHEST
+  - HOPPER
+  - DISPENSER
+  - DROPPER
+  - FURNACE
+  - BLAST_FURNACE
+  - SMOKER
+  - BREWING_STAND
+  - LECTERN
+  - CHISELED_BOOKSHELF
+  - COMPOSTER
+  - BEACON
+
+  # Shulker boxes
+  - SHULKER_BOX
+  - WHITE_SHULKER_BOX
+  - ORANGE_SHULKER_BOX
+  - MAGENTA_SHULKER_BOX
+  - LIGHT_BLUE_SHULKER_BOX
+  - YELLOW_SHULKER_BOX
+  - LIME_SHULKER_BOX
+  - PINK_SHULKER_BOX
+  - GRAY_SHULKER_BOX
+  - LIGHT_GRAY_SHULKER_BOX
+  - CYAN_SHULKER_BOX
+  - PURPLE_SHULKER_BOX
+  - BLUE_SHULKER_BOX
+  - BROWN_SHULKER_BOX
+  - GREEN_SHULKER_BOX
+  - RED_SHULKER_BOX
+  - BLACK_SHULKER_BOX
+
+# These keys are protected during automatic config updates.
+# The plugin will not overwrite them from the default config.
+# Keep "locked-worlds" here to protect your selected worlds.
+# Keep "language" selection not to reset during updates.
+
+protected-config-keys:
+  - locked-worlds
+  - language
+
+# If true, the plugin will create a backup of config.yml before saving automatic config updates.
+backup-config-before-auto-update: true
+
+# If true, the plugin will add missing values from default config lists
+# into your existing config lists on the next reload/startup.
+# Existing values are kept. Nothing is removed.
+# The lists listed in protected-config-keys are never auto-updated.
+# After a successful update, this will automatically return to false.
+update-lists-on-next-reload: false
+
+config-version: 6

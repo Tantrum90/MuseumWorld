@@ -1,0 +1,10 @@
+messages-format-version: 1
+
+# Message shown when an inventory modification is blocked (taking/placing items).
+blocked-message: "§6Музејски свет: §eУживај во разгледувањето!"
+
+# Message shown when entity damage is blocked.
+entity-damage-message: "§6Музејски свет: §cНе можеш да повредиш/убиеш животни овде."
+
+# Message shown when friendly mob damage is blocked.
+friendly-damage-message: "§6Музејски свет: §cНе можеш да повредиш животни овде."

@@ -1,0 +1,10 @@
+messages-format-version: 1
+
+# Message shown when an inventory modification is blocked (taking/placing items).
+blocked-message: "§6Museum world: §eEnjoy looking around!"
+
+# Message shown when entity damage is blocked.
+entity-damage-message: "§6Museum world: §cYou cannot damage entities here."
+
+# Message shown when friendly mob damage is blocked (if you use that option).
+friendly-damage-message: "§6Museum world: §cYou cannot damage friendly mobs here."

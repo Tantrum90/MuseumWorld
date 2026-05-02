@@ -1,0 +1,16 @@
+name: MuseumWorld
+version: '${version}'
+main: mk.tantrum90.museumworld.MuseumWorld
+api-version: '26.1.2'
+description: ${description}
+load: STARTUP
+authors: [ Tantrum90 ]
+
+permissions:
+  museumworld.admin:
+    description: Allows managing MuseumWorld settings via /museum
+    default: op
+
+  museumworld.bypass:
+    description: Allows bypassing MuseumWorld protection in locked worlds
+    default: false
