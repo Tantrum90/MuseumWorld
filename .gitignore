@@ -1,6 +1,55 @@
-.gradle/
-build/
+# IntelliJ IDEA
 .idea/
 *.iml
+*.ipr
+*.iws
+out/
+
+# Gradle
+.gradle/
+build/
+
+# Java compiled files
+*.class
+
+# Logs
+*.log
+logs/
+
+# Runtime / local test server folders
+run/
+
+# Packaged archives / generated files
+*.zip
+*.tar.gz
+*.rar
+
+# macOS
 .DS_Store
 ._*
+.AppleDouble
+.LSOverride
+Icon?
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Crash logs
+hs_err_pid*
+replay_pid*

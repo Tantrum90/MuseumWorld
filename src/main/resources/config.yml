@@ -19,6 +19,9 @@ language: en
 # Useful for testing why something is blocked or allowed.
 debug-mode: false
 
+# If true, MuseumWorld will print a startup summary when the plugin is enabled.
+startup-summary-enabled: false
+
 # Message throttling to prevent chat spam
 messages:
   # Minimum time (ms) between repeating the same message to the same player.
@@ -268,6 +271,15 @@ protected-config-keys:
   - locked-worlds
   - language
 
+# If true, the plugin will create/update config-reference.yml on startup.
+# This file keeps the default commented configuration for reference.
+# The plugin does not read settings from config-reference.yml.
+create-config-reference: true
+
+# Maximum number of automatic config backups to keep.
+# Set to 0 or a negative number to disable automatic cleanup.
+max-config-backups: 5
+
 # If true, the plugin will create a backup of config.yml before saving automatic config updates.
 backup-config-before-auto-update: true
 
@@ -278,4 +290,13 @@ backup-config-before-auto-update: true
 # After a successful update, this will automatically return to false.
 update-lists-on-next-reload: false
 
-config-version: 6
+# If true, MuseumWorld will automatically remove invalid Material/EntityType names
+# from active config lists after creating a backup and validation report.
+# This only applies to:
+# - readonly-blocks
+# - view-only-containers
+# - readonly-entities
+# - blocked-entity-types
+auto-clean-invalid-config-values: true
+
+config-version: 7

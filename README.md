@@ -1,4 +1,17 @@
-# MuseumWorld (Tantrum90)
+# MuseumWorld  by  Tantrum90
+
+  <a href="https://github.com/Tantrum90/MuseumWorld">
+    <img alt="GitHub" src="https://img.shields.io/badge/GitHub-MuseumWorld-181717?style=for-the-badge&logo=github">
+  </a>
+
+  <a href="https://hangar.papermc.io/Tantrum90/MuseumWorld">
+    <img alt="Hangar" src="https://img.shields.io/badge/Hangar-MuseumWorld-blue?style=for-the-badge">
+  </a>
+
+  <a href="https://modrinth.com/plugin/museumworld">
+    <img alt="Modrinth" src="https://img.shields.io/badge/Modrinth-MuseumWorld-00AF5C?style=for-the-badge&logo=modrinth">
+  </a>
+
 
 MuseumWorld is a lightweight Paper plugin that turns selected worlds into **read-only “museum / showcase” worlds**.
 

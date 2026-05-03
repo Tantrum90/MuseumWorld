@@ -46,7 +46,6 @@ public final class MuseumWorld extends JavaPlugin {
     private boolean readonlyEntitiesAuto;
     private final Set<EntityType> readonlyEntities = EnumSet.noneOf(EntityType.class);
 
-    private YamlConfiguration messages;
     private String msgBlocked;
     private String msgEntityDamage;
     private String msgFriendlyDamage;
@@ -68,6 +67,10 @@ public final class MuseumWorld extends JavaPlugin {
         logBuildChannelWarning();
 
         Bukkit.getPluginManager().registerEvents(new MuseumWorldListener(this), this);
+
+        if (getConfig().getBoolean("startup-summary-enabled", false)) {
+            logStartupSummary();
+        }
 
         getLogger().info("MuseumWorld enabled. Locked worlds: " + lockedWorlds);
     }
@@ -111,13 +114,38 @@ public final class MuseumWorld extends JavaPlugin {
         }
     }
 
+    private void logStartupSummary() {
+        getLogger().info("==================================================");
+        getLogger().info("MuseumWorld startup summary");
+        getLogger().info("Plugin version: " + getPluginMeta().getVersion());
+        getLogger().info("Config version: " + getConfig().getInt("config-version", 1));
+        getLogger().info("Locked worlds: " + lockedWorlds.size());
+        getLogger().info("Readonly blocks: " + readonlyBlocks.size());
+        getLogger().info("View-only containers: " + viewOnlyContainers.size());
+        getLogger().info("Readonly entities: " + readonlyEntities.size());
+        getLogger().info("Blocked entity types: " + blockedEntityTypes.size());
+        getLogger().info("Language: " + language);
+        getLogger().info("Debug mode: " + debugMode);
+        getLogger().info("Notify players: " + notifyPlayer);
+        getLogger().info("Message cooldown: " + cooldownMs + " ms");
+        getLogger().info("Block entity damage: " + blockEntityDamage);
+        getLogger().info("Block friendly damage: " + blockFriendlyDamage);
+        getLogger().info("Read-only interactions: " + blockReadonlyInteractions);
+        getLogger().info("Readonly blocks auto: " + readonlyBlocksAuto);
+        getLogger().info("Readonly entities auto: " + readonlyEntitiesAuto);
+        getLogger().info("==================================================");
+    }
+
     public void reloadAll() {
         ensureDefaultConfigExists();
         ensureDefaultMessageFilesExist();
+        ensureConfigReferenceFile();
 
         updateConfigMissingKeys();
         updateMessageMissingKeys("messages_en.yml");
         updateMessageMissingKeys("messages_mk.yml");
+
+        validateActiveConfigFile();
 
         reloadConfig();
         loadConfigState();
@@ -145,16 +173,46 @@ public final class MuseumWorld extends JavaPlugin {
         }
     }
 
-    private void updateConfigMissingKeys() {
+    private void ensureConfigReferenceFile() {
         File configFile = new File(getDataFolder(), "config.yml");
 
         YamlConfiguration existingConfig = YamlConfiguration.loadConfiguration(configFile);
+        boolean createReference = existingConfig.getBoolean("create-config-reference", true);
+
+        if (!createReference) {
+            return;
+        }
+
+        File referenceFile = new File(getDataFolder(), "config-reference.yml");
+
+        try (InputStream stream = getResource("config.yml")) {
+            if (stream == null) {
+                getLogger().warning("Could not create config-reference.yml because default config.yml was not found in the plugin jar.");
+                return;
+            }
+
+            Files.copy(stream, referenceFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            getLogger().info("config-reference.yml updated.");
+        } catch (Exception ex) {
+            getLogger().warning("Could not update config-reference.yml: " + ex.getMessage());
+        }
+    }
+
+    private void updateConfigMissingKeys() {
+        File configFile = new File(getDataFolder(), "config.yml");
+
         YamlConfiguration defaultConfig = loadDefaultYamlFromJar("config.yml");
 
         if (defaultConfig == null) {
             getLogger().warning("Could not load default config.yml from plugin jar. Missing key update skipped.");
             return;
         }
+
+        int defaultVersion = defaultConfig.getInt("config-version", 1);
+
+        normalizeDuplicateTopLevelConfigVersionEntries(configFile, defaultVersion);
+
+        YamlConfiguration existingConfig = YamlConfiguration.loadConfiguration(configFile);
 
         Set<String> protectedConfigKeys = loadProtectedConfigKeys(existingConfig, defaultConfig);
 
@@ -179,7 +237,6 @@ public final class MuseumWorld extends JavaPlugin {
         }
 
         int existingVersion = existingConfig.getInt("config-version", 1);
-        int defaultVersion = defaultConfig.getInt("config-version", existingVersion);
 
         if (existingVersion < defaultVersion) {
             existingConfig.set("config-version", defaultVersion);
@@ -191,15 +248,85 @@ public final class MuseumWorld extends JavaPlugin {
                     "backup-config-before-auto-update",
                     defaultConfig.getBoolean("backup-config-before-auto-update", true)
             )) {
-                backupConfigFile(configFile);
+                int maxBackups = existingConfig.getInt(
+                        "max-config-backups",
+                        defaultConfig.getInt("max-config-backups", 10)
+                );
+
+                backupConfigFile(configFile, maxBackups);
             }
 
             try {
                 existingConfig.save(configFile);
-                getLogger().info("config.yml updated. Config version: " + defaultVersion);
+                getLogger().info("config.yml updated. Config version: " + Math.max(existingVersion, defaultVersion));
             } catch (Exception ex) {
                 getLogger().severe("Could not save updated config.yml: " + ex.getMessage());
             }
+        }
+    }
+
+    private void normalizeDuplicateTopLevelConfigVersionEntries(File configFile, int fallbackVersion) {
+        if (configFile == null || !configFile.exists()) {
+            return;
+        }
+
+        List<String> lines;
+
+        try {
+            lines = Files.readAllLines(configFile.toPath(), StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            getLogger().warning("Could not scan config.yml for duplicate config-version entries: " + ex.getMessage());
+            return;
+        }
+
+        List<Integer> configVersionLineIndexes = new ArrayList<>();
+
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            String trimmed = line.trim();
+
+            if (trimmed.startsWith("#")) {
+                continue;
+            }
+
+            boolean isTopLevel = !line.startsWith(" ") && !line.startsWith("\t");
+
+            if (isTopLevel && trimmed.matches("^config-version\\s*:.*$")) {
+                configVersionLineIndexes.add(i);
+            }
+        }
+
+        if (configVersionLineIndexes.size() <= 1) {
+            return;
+        }
+
+        int lastIndex = configVersionLineIndexes.getLast();
+        String lastLine = lines.get(lastIndex);
+        String lastValue = lastLine.substring(lastLine.indexOf(':') + 1).trim();
+
+        if (lastValue.isBlank()) {
+            lastValue = String.valueOf(fallbackVersion);
+        }
+
+        List<String> cleanedLines = new ArrayList<>();
+
+        for (int i = 0; i < lines.size(); i++) {
+            if (configVersionLineIndexes.contains(i) && i != lastIndex) {
+                continue;
+            }
+
+            if (i == lastIndex) {
+                cleanedLines.add("config-version: " + lastValue);
+            } else {
+                cleanedLines.add(lines.get(i));
+            }
+        }
+
+        try {
+            Files.write(configFile.toPath(), cleanedLines, StandardCharsets.UTF_8);
+            getLogger().warning("Duplicate config-version entries found in config.yml. Kept only the last value: " + lastValue);
+        } catch (Exception ex) {
+            getLogger().warning("Could not clean duplicate config-version entries: " + ex.getMessage());
         }
     }
 
@@ -223,7 +350,11 @@ public final class MuseumWorld extends JavaPlugin {
         return protectedKeys;
     }
 
-    private void backupConfigFile(File configFile) {
+    private void backupConfigFile(File configFile, int maxBackups) {
+        backupConfigFile(configFile, maxBackups, "config-before-auto-update-");
+    }
+
+    private void backupConfigFile(File configFile, int maxBackups, String filePrefix) {
         if (configFile == null || !configFile.exists()) {
             return;
         }
@@ -236,13 +367,52 @@ public final class MuseumWorld extends JavaPlugin {
         }
 
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
-        File backupFile = new File(backupFolder, "config-before-auto-update-" + timestamp + ".yml");
+        File backupFile = new File(backupFolder, filePrefix + timestamp + ".yml");
 
         try {
             Files.copy(configFile.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             getLogger().info("Created config backup: backups/" + backupFile.getName());
+            cleanupOldConfigBackups(backupFolder, maxBackups, filePrefix);
         } catch (Exception ex) {
             getLogger().warning("Could not create config backup: " + ex.getMessage());
+        }
+    }
+
+    private void cleanupOldConfigBackups(File backupFolder, int maxBackups, String filePrefix) {
+        if (maxBackups <= 0) {
+            return;
+        }
+
+        File[] files = backupFolder.listFiles();
+
+        if (files == null || files.length == 0) {
+            return;
+        }
+
+        List<File> backups = new ArrayList<>();
+
+        for (File file : files) {
+            if (file.isFile()
+                    && file.getName().startsWith(filePrefix)
+                    && file.getName().endsWith(".yml")) {
+                backups.add(file);
+            }
+        }
+
+        if (backups.size() <= maxBackups) {
+            return;
+        }
+
+        backups.sort(Comparator.comparingLong(File::lastModified).reversed());
+
+        for (int i = maxBackups; i < backups.size(); i++) {
+            File oldBackup = backups.get(i);
+
+            if (oldBackup.delete()) {
+                getLogger().info("Deleted old config backup: backups/" + oldBackup.getName());
+            } else {
+                getLogger().warning("Could not delete old config backup: backups/" + oldBackup.getName());
+            }
         }
     }
 
@@ -420,6 +590,283 @@ public final class MuseumWorld extends JavaPlugin {
         return currentPath + "." + key;
     }
 
+    private void validateActiveConfigFile() {
+        File configFile = new File(getDataFolder(), "config.yml");
+
+        if (!configFile.exists()) {
+            return;
+        }
+
+        YamlConfiguration activeConfig = YamlConfiguration.loadConfiguration(configFile);
+
+        boolean autoClean = activeConfig.getBoolean("auto-clean-invalid-config-values", false);
+
+        ConfigValidationResult result = new ConfigValidationResult(
+                new ArrayList<>(),
+                new ArrayList<>()
+        );
+
+        boolean changed = false;
+
+        changed |= validateMaterialList(activeConfig, "readonly-blocks", autoClean, result);
+        changed |= validateMaterialList(activeConfig, "view-only-containers", autoClean, result);
+        changed |= validateEntityTypeList(activeConfig, "readonly-entities", autoClean, result);
+        changed |= validateEntityTypeList(activeConfig, "blocked-entity-types", autoClean, result);
+
+        if (!result.hasIssues()) {
+            getLogger().info("Config validation: OK");
+            return;
+        }
+
+        for (String invalidMaterial : result.invalidMaterials()) {
+            if (autoClean) {
+                getLogger().warning("Invalid material removed from " + invalidMaterial);
+            } else {
+                getLogger().warning("Invalid material found in " + invalidMaterial);
+            }
+        }
+
+        for (String invalidEntity : result.invalidEntities()) {
+            if (autoClean) {
+                getLogger().warning("Invalid entity removed from " + invalidEntity);
+            } else {
+                getLogger().warning("Invalid entity found in " + invalidEntity);
+            }
+        }
+
+        if (changed) {
+            if (activeConfig.getBoolean("backup-config-before-auto-update", true)) {
+                int maxBackups = activeConfig.getInt("max-config-backups", 10);
+                backupConfigFile(configFile, maxBackups, "config-before-validation-cleanup-");
+            }
+
+            try {
+                activeConfig.save(configFile);
+                getLogger().info("Invalid config values cleaned from active config.yml.");
+            } catch (Exception ex) {
+                getLogger().severe("Could not save cleaned config.yml: " + ex.getMessage());
+            }
+        }
+
+        File reportFile = writeConfigValidationReport(result, activeConfig, autoClean, changed);
+
+        if (reportFile != null) {
+            getLogger().warning("Validation report saved: logs/" + reportFile.getName());
+        }
+    }
+
+    private boolean validateMaterialList(
+            YamlConfiguration config,
+            String path,
+            boolean autoClean,
+            ConfigValidationResult result
+    ) {
+        List<?> rawList = config.getList(path);
+
+        if (rawList == null) {
+            return false;
+        }
+
+        List<String> cleanedList = new ArrayList<>();
+        boolean foundInvalidValue = false;
+
+        for (Object rawItem : rawList) {
+            if (!(rawItem instanceof String value)) {
+                result.invalidMaterials().add(path + ": " + rawItem);
+                foundInvalidValue = true;
+
+                if (!autoClean) {
+                    cleanedList.add(String.valueOf(rawItem));
+                }
+
+                continue;
+            }
+
+            String trimmed = value.trim();
+
+            if (trimmed.isEmpty()) {
+                foundInvalidValue = true;
+
+                if (!autoClean) {
+                    cleanedList.add(value);
+                }
+
+                continue;
+            }
+
+            String normalized = trimmed.toUpperCase(Locale.ROOT);
+
+            try {
+                Material.valueOf(normalized);
+                cleanedList.add(trimmed);
+            } catch (Exception ex) {
+                result.invalidMaterials().add(path + ": " + trimmed);
+                foundInvalidValue = true;
+
+                if (!autoClean) {
+                    cleanedList.add(trimmed);
+                }
+            }
+        }
+
+        if (autoClean && foundInvalidValue) {
+            config.set(path, cleanedList);
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean validateEntityTypeList(
+            YamlConfiguration config,
+            String path,
+            boolean autoClean,
+            ConfigValidationResult result
+    ) {
+        List<?> rawList = config.getList(path);
+
+        if (rawList == null) {
+            return false;
+        }
+
+        List<String> cleanedList = new ArrayList<>();
+        boolean foundInvalidValue = false;
+
+        for (Object rawItem : rawList) {
+            if (!(rawItem instanceof String value)) {
+                result.invalidEntities().add(path + ": " + rawItem);
+                foundInvalidValue = true;
+
+                if (!autoClean) {
+                    cleanedList.add(String.valueOf(rawItem));
+                }
+
+                continue;
+            }
+
+            String trimmed = value.trim();
+
+            if (trimmed.isEmpty()) {
+                foundInvalidValue = true;
+
+                if (!autoClean) {
+                    cleanedList.add(value);
+                }
+
+                continue;
+            }
+
+            String normalized = trimmed.toUpperCase(Locale.ROOT);
+
+            try {
+                EntityType.valueOf(normalized);
+                cleanedList.add(trimmed);
+            } catch (Exception ex) {
+                result.invalidEntities().add(path + ": " + trimmed);
+                foundInvalidValue = true;
+
+                if (!autoClean) {
+                    cleanedList.add(trimmed);
+                }
+            }
+        }
+
+        if (autoClean && foundInvalidValue) {
+            config.set(path, cleanedList);
+            return true;
+        }
+
+        return false;
+    }
+
+    private File writeConfigValidationReport(
+            ConfigValidationResult result,
+            YamlConfiguration activeConfig,
+            boolean autoClean,
+            boolean configChanged
+    ) {
+        File logFolder = new File(getDataFolder(), "logs");
+
+        if (!logFolder.exists() && !logFolder.mkdirs()) {
+            getLogger().warning("Could not create logs folder for config validation report.");
+            return null;
+        }
+
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+        File reportFile = new File(logFolder, "config-validation-" + timestamp + ".log");
+
+        StringBuilder report = new StringBuilder();
+
+        report.append("MuseumWorld Config Validation Report").append(System.lineSeparator());
+        report.append("Generated: ").append(timestamp).append(System.lineSeparator());
+        report.append("Plugin version: ").append(getPluginMeta().getVersion()).append(System.lineSeparator());
+        report.append("Config version: ").append(activeConfig.getInt("config-version", 1)).append(System.lineSeparator());
+        report.append(System.lineSeparator());
+
+        report.append("Scope:").append(System.lineSeparator());
+        report.append("- readonly-blocks").append(System.lineSeparator());
+        report.append("- view-only-containers").append(System.lineSeparator());
+        report.append("- readonly-entities").append(System.lineSeparator());
+        report.append("- blocked-entity-types").append(System.lineSeparator());
+        report.append(System.lineSeparator());
+
+        report.append("Not checked or modified:").append(System.lineSeparator());
+        report.append("- locked-worlds").append(System.lineSeparator());
+        report.append("- language").append(System.lineSeparator());
+        report.append(System.lineSeparator());
+
+        report.append("Invalid materials:").append(System.lineSeparator());
+
+        if (result.invalidMaterials().isEmpty()) {
+            report.append("- none").append(System.lineSeparator());
+        } else {
+            for (String invalidMaterial : result.invalidMaterials()) {
+                report.append("- ").append(invalidMaterial).append(System.lineSeparator());
+            }
+        }
+
+        report.append(System.lineSeparator());
+        report.append("Invalid entities:").append(System.lineSeparator());
+
+        if (result.invalidEntities().isEmpty()) {
+            report.append("- none").append(System.lineSeparator());
+        } else {
+            for (String invalidEntity : result.invalidEntities()) {
+                report.append("- ").append(invalidEntity).append(System.lineSeparator());
+            }
+        }
+
+        report.append(System.lineSeparator());
+        report.append("Automatic cleanup:").append(System.lineSeparator());
+        report.append("- Enabled: ").append(autoClean).append(System.lineSeparator());
+        report.append("- Config changed: ").append(configChanged).append(System.lineSeparator());
+
+        if (autoClean && configChanged) {
+            report.append("- Invalid Material/EntityType values were removed from active config.yml.").append(System.lineSeparator());
+        } else if (autoClean) {
+            report.append("- Cleanup was enabled, but no active config changes were required.").append(System.lineSeparator());
+        } else {
+            report.append("- Cleanup was disabled, so active config.yml was not changed.").append(System.lineSeparator());
+        }
+
+        try {
+            Files.writeString(reportFile.toPath(), report.toString(), StandardCharsets.UTF_8);
+            return reportFile;
+        } catch (Exception ex) {
+            getLogger().warning("Could not write config validation report: " + ex.getMessage());
+            return null;
+        }
+    }
+
+    private record ConfigValidationResult(
+            List<String> invalidMaterials,
+            List<String> invalidEntities
+    ) {
+        private boolean hasIssues() {
+            return !invalidMaterials.isEmpty() || !invalidEntities.isEmpty();
+        }
+    }
+
     private void loadConfigState() {
         lockedWorlds.clear();
         for (String w : getConfig().getStringList("locked-worlds")) {
@@ -503,11 +950,11 @@ public final class MuseumWorld extends JavaPlugin {
             f = new File(getDataFolder(), "messages_en.yml");
         }
 
-        messages = YamlConfiguration.loadConfiguration(f);
+        YamlConfiguration loadedMessages = YamlConfiguration.loadConfiguration(f);
 
-        msgBlocked = color(messages.getString("blocked-message", "§6Museum world: §eEnjoy looking around!"));
-        msgEntityDamage = color(messages.getString("entity-damage-message", "§6Museum world: §cYou cannot damage entities here."));
-        msgFriendlyDamage = color(messages.getString("friendly-damage-message", "§6Museum world: §cYou cannot damage friendly mobs here."));
+        msgBlocked = color(loadedMessages.getString("blocked-message", "§6Museum world: §eEnjoy looking around!"));
+        msgEntityDamage = color(loadedMessages.getString("entity-damage-message", "§6Museum world: §cYou cannot damage entities here."));
+        msgFriendlyDamage = color(loadedMessages.getString("friendly-damage-message", "§6Museum world: §cYou cannot damage friendly mobs here."));
     }
 
     private String color(String s) {
