@@ -4,14 +4,11 @@ import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Animals;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Golem;
-import org.bukkit.entity.NPC;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
-import org.bukkit.entity.WaterMob;
+import org.bukkit.entity.Vehicle;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -43,6 +40,7 @@ import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.vehicle.VehicleDamageEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.event.world.PortalCreateEvent;
@@ -181,16 +179,6 @@ public final class MuseumWorldListener implements Listener {
                 || typeName.endsWith("_MINECART");
     }
 
-    private boolean isFriendlyMob(Entity entity) {
-        if (entity == null) {
-            return false;
-        }
-
-        return entity instanceof Animals
-                || entity instanceof Golem
-                || entity instanceof WaterMob
-                || entity instanceof NPC;
-    }
 
     private boolean isReadonlyBlock(Material material) {
         if (material == null || material == Material.AIR) {
@@ -651,35 +639,32 @@ public final class MuseumWorldListener implements Listener {
             return;
         }
 
-        if (plugin.blockEntityDamage()) {
+        /*
+         * readonly-entities are protected from interaction AND damage/removal.
+         * This prevents item frames, armor stands, display entities and decorative
+         * vehicles from being broken or emptied while still allowing hostile mobs
+         * such as pillagers to be damaged when they are not listed as protected.
+         */
+        if (isReadonlyEntity(damaged)) {
             event.setCancelled(true);
-            debugDenied("entity-damage", damaged, player, "all entity damage is blocked in locked world");
+            debugDenied("entity-damage", damaged, player, "entity is read-only: " + damaged.getType().name());
             notify(player, "entity-damage", plugin.msgEntityDamage());
             return;
         }
 
-        if (plugin.blockedEntityTypes().contains(damaged.getType())) {
+        /*
+         * blocked-entity-types is the explicit damage-protection list.
+         * block-entity-damage only enables/disables this list-based protection;
+         * it does not mean "block all entity damage".
+         */
+        if (plugin.blockEntityDamage() && plugin.blockedEntityTypes().contains(damaged.getType())) {
             event.setCancelled(true);
             debugDenied("entity-damage", damaged, player, "entity type is blocked: " + damaged.getType().name());
             notify(player, "entity-damage", plugin.msgEntityDamage());
             return;
         }
 
-        if (plugin.blockReadonlyInteractions() && isReadonlyEntity(damaged)) {
-            event.setCancelled(true);
-            debugDenied("readonly-entity-damage", damaged, player, "entity is read-only: " + damaged.getType().name());
-            notify(player, "readonly-entity-damage", plugin.msgEntityDamage());
-            return;
-        }
-
-        if (plugin.blockFriendlyDamage() && isFriendlyMob(damaged)) {
-            event.setCancelled(true);
-            debugDenied("friendly-damage", damaged, player, "friendly mob damage blocked: " + damaged.getType().name());
-            notify(player, "friendly-damage", plugin.msgFriendlyDamage());
-            return;
-        }
-
-        debugAllowed("entity-damage", damaged, player, "entity did not match blocked rules: " + damaged.getType().name());
+        debugAllowed("entity-damage", damaged, player, "entity is not protected from damage: " + damaged.getType().name());
     }
 
     private Player getResponsiblePlayer(Entity damager) {
@@ -1043,6 +1028,31 @@ public final class MuseumWorldListener implements Listener {
         event.setCancelled(true);
         debugDenied("vehicle-enter", event.getVehicle(), player, "vehicle entering blocked");
         notify(player, "vehicle-enter", plugin.msgBlocked());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onVehicleDamage(VehicleDamageEvent event) {
+        if (!plugin.blockVehiclePlaceBreak()) {
+            return;
+        }
+
+        if (!(event.getAttacker() instanceof Player player)) {
+            return;
+        }
+
+        if (!isLocked(event.getVehicle())) {
+            debugAllowed("vehicle-damage", event.getVehicle(), player, "vehicle world is not locked");
+            return;
+        }
+
+        if (canBypass(player)) {
+            debugAllowed("vehicle-damage", event.getVehicle(), player, "player has bypass/admin permission");
+            return;
+        }
+
+        event.setCancelled(true);
+        debugDenied("vehicle-damage", event.getVehicle(), player, "vehicle damage blocked");
+        notify(player, "vehicle-damage", plugin.msgBlocked());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

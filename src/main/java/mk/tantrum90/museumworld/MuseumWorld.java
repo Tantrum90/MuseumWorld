@@ -34,7 +34,6 @@ public final class MuseumWorld extends JavaPlugin {
     private long cooldownMs;
 
     private boolean blockEntityDamage;
-    private boolean blockFriendlyDamage;
     private boolean blockItemDrop;
     private boolean blockItemPickup;
     private boolean blockBucketUse;
@@ -64,7 +63,6 @@ public final class MuseumWorld extends JavaPlugin {
 
     private String msgBlocked;
     private String msgEntityDamage;
-    private String msgFriendlyDamage;
 
     private final Map<UUID, Map<String, Long>> lastMessageByKey = new ConcurrentHashMap<>();
 
@@ -145,7 +143,6 @@ public final class MuseumWorld extends JavaPlugin {
         getLogger().info("Notify players: " + notifyPlayer);
         getLogger().info("Message cooldown: " + cooldownMs + " ms");
         getLogger().info("Block entity damage: " + blockEntityDamage);
-        getLogger().info("Block friendly damage: " + blockFriendlyDamage);
         getLogger().info("Block item drop: " + blockItemDrop);
         getLogger().info("Block item pickup: " + blockItemPickup);
         getLogger().info("Block bucket use: " + blockBucketUse);
@@ -342,7 +339,7 @@ public final class MuseumWorld extends JavaPlugin {
             YamlConfiguration existingConfig,
             YamlConfiguration defaultConfig
     ) {
-        List<String> templateLines = new ArrayList<>(Arrays.asList(defaultTemplate.split("\\R", -1)));
+        List<String> templateLines = new ArrayList<>(List.of(defaultTemplate.split("\\R", -1)));
         List<String> outputLines = new ArrayList<>();
 
         String currentTopLevelSection = null;
@@ -358,6 +355,13 @@ public final class MuseumWorld extends JavaPlugin {
 
             if (topLevelKey != null) {
                 currentTopLevelSection = null;
+
+                if ("locked-worlds".equals(topLevelKey)) {
+                    List<String> listBlock = collectIndentedBlock(templateLines, i);
+                    outputLines.addAll(renderLockedWorldsBlock(existingConfig));
+                    i += listBlock.size();
+                    continue;
+                }
 
                 if (isListPath(topLevelKey, existingConfig, defaultConfig)) {
                     List<String> listBlock = collectIndentedBlock(templateLines, i);
@@ -407,6 +411,33 @@ public final class MuseumWorld extends JavaPlugin {
         outputLines.add("config-version: " + configVersion);
 
         return String.join(System.lineSeparator(), outputLines) + System.lineSeparator();
+    }
+
+    private List<String> renderLockedWorldsBlock(YamlConfiguration existingConfig) {
+        List<String> result = new ArrayList<>();
+        List<String> worlds = existingConfig.getStringList("locked-worlds");
+
+        if (worlds.isEmpty()) {
+            result.add("locked-worlds: []");
+            return result;
+        }
+
+        result.add("locked-worlds:");
+
+        for (String world : worlds) {
+            if (world == null || world.isBlank()) {
+                continue;
+            }
+
+            result.add("  - " + world.trim());
+        }
+
+        if (result.size() == 1) {
+            result.clear();
+            result.add("locked-worlds: []");
+        }
+
+        return result;
     }
 
     private boolean isConfigVersionLine(String line) {
@@ -1252,7 +1283,6 @@ public final class MuseumWorld extends JavaPlugin {
         cooldownMs = getConfig().getLong("messages.cooldown-ms", 2500);
 
         blockEntityDamage = getConfig().getBoolean("block-entity-damage", true);
-        blockFriendlyDamage = getConfig().getBoolean("block-friendly-damage", true);
         blockItemDrop = getConfig().getBoolean("block-item-drop", true);
         blockItemPickup = getConfig().getBoolean("block-item-pickup", true);
         blockBucketUse = getConfig().getBoolean("block-bucket-use", true);
@@ -1341,7 +1371,6 @@ public final class MuseumWorld extends JavaPlugin {
 
         msgBlocked = color(loadedMessages.getString("blocked-message", "§6Museum world: §eEnjoy looking around!"));
         msgEntityDamage = color(loadedMessages.getString("entity-damage-message", "§6Museum world: §cYou cannot damage entities here."));
-        msgFriendlyDamage = color(loadedMessages.getString("friendly-damage-message", "§6Museum world: §cYou cannot damage friendly mobs here."));
     }
 
     private String color(String s) {
@@ -1393,9 +1422,6 @@ public final class MuseumWorld extends JavaPlugin {
         return blockEntityDamage;
     }
 
-    public boolean blockFriendlyDamage() {
-        return blockFriendlyDamage;
-    }
 
     public boolean blockItemDrop() {
         return blockItemDrop;
@@ -1497,9 +1523,6 @@ public final class MuseumWorld extends JavaPlugin {
         return msgEntityDamage;
     }
 
-    public String msgFriendlyDamage() {
-        return msgFriendlyDamage;
-    }
 
     public boolean shouldSend(UUID playerId, String key) {
         if (cooldownMs <= 0) {

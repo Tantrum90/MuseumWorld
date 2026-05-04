@@ -2,6 +2,7 @@
 
 # Which worlds should be treated as read-only
 locked-worlds: []
+
 # Example:
 # locked-worlds:
 #   - overworld
@@ -28,11 +29,9 @@ messages:
   # Some events (like repeated interactions) can otherwise spam chat.
   cooldown-ms: 2500
 
-# Block damaging ANY entities in locked worlds
+# If true, damage protection is applied only to entity types listed under blocked-entity-types.
+# Entity types not listed there can still be damaged in locked worlds.
 block-entity-damage: true
-
-# Legacy setting kept for compatibility: block damage to friendly/passive mobs
-block-friendly-damage: true
 
 # Block players from dropping items in locked worlds.
 block-item-drop: true
@@ -76,7 +75,7 @@ block-vehicle-place-break: true
 
 # Block players from entering boats, rafts, minecarts and other vehicles in locked worlds.
 # Useful when vehicles are used as decoration in museum/showcase worlds.
-block-vehicle-enter: true
+block-vehicle-enter: false
 
 # Block throwing eggs, ender pearls, splash potions, arrows and similar projectiles/items
 # that can affect the world or entities.
@@ -92,7 +91,7 @@ block-lead-use: true
 # Block name tags on entities in locked worlds.
 block-name-tag-use: true
 
-# Additionally block damaging these entity types (even if block-entity-damage is false)
+# Entity types that cannot be damaged when block-entity-damage is true
 blocked-entity-types:
   - ALLAY
   - ARMADILLO
@@ -141,6 +140,10 @@ blocked-entity-types:
   - WANDERING_TRADER
   - WOLF
   - ZOMBIE_HORSE
+  - CREAKING
+  - GIANT
+  - TADPOLE
+
 
 # Block interactions with "read-only" blocks/entities (see lists below).
 # Note: block breaking is already blocked globally in locked worlds.
@@ -292,6 +295,45 @@ readonly-blocks:
   - GREEN_CANDLE
   - RED_CANDLE
   - BLACK_CANDLE
+
+  # Potted plants / flower pots with content
+  - POTTED_ACACIA_SAPLING
+  - POTTED_ALLIUM
+  - POTTED_AZALEA_BUSH
+  - POTTED_AZURE_BLUET
+  - POTTED_BAMBOO
+  - POTTED_BIRCH_SAPLING
+  - POTTED_BLUE_ORCHID
+  - POTTED_BROWN_MUSHROOM
+  - POTTED_CACTUS
+  - POTTED_CHERRY_SAPLING
+  - POTTED_CLOSED_EYEBLOSSOM
+  - POTTED_CORNFLOWER
+  - POTTED_CRIMSON_FUNGUS
+  - POTTED_CRIMSON_ROOTS
+  - POTTED_DANDELION
+  - POTTED_DARK_OAK_SAPLING
+  - POTTED_DEAD_BUSH
+  - POTTED_FERN
+  - POTTED_FLOWERING_AZALEA_BUSH
+  - POTTED_JUNGLE_SAPLING
+  - POTTED_LILY_OF_THE_VALLEY
+  - POTTED_MANGROVE_PROPAGULE
+  - POTTED_OAK_SAPLING
+  - POTTED_OPEN_EYEBLOSSOM
+  - POTTED_ORANGE_TULIP
+  - POTTED_OXEYE_DAISY
+  - POTTED_PALE_OAK_SAPLING
+  - POTTED_PINK_TULIP
+  - POTTED_POPPY
+  - POTTED_RED_MUSHROOM
+  - POTTED_RED_TULIP
+  - POTTED_SPRUCE_SAPLING
+  - POTTED_TORCHFLOWER
+  - POTTED_WARPED_FUNGUS
+  - POTTED_WARPED_ROOTS
+  - POTTED_WHITE_TULIP
+  - POTTED_WITHER_ROSE
 
   # Doors / trapdoors / fence gates are NOT enabled by default.
   # They are normal navigation blocks in many museum/showcase worlds.

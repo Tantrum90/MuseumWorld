@@ -146,7 +146,6 @@ public final class MuseumCommand implements BasicCommand {
         sender.sendMessage("§eMessage cooldown: §f" + plugin.cooldownMs() + " ms");
 
         sender.sendMessage("§eBlock entity damage: " + formatBoolean(plugin.blockEntityDamage()));
-        sender.sendMessage("§eBlock friendly damage: " + formatBoolean(plugin.blockFriendlyDamage()));
         sender.sendMessage("§eBlock item drop: " + formatBoolean(plugin.blockItemDrop()));
         sender.sendMessage("§eBlock item pickup: " + formatBoolean(plugin.blockItemPickup()));
         sender.sendMessage("§eBlock bucket use: " + formatBoolean(plugin.blockBucketUse()));
