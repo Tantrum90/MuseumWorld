@@ -10,6 +10,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Golem;
 import org.bukkit.entity.NPC;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.entity.WaterMob;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -43,6 +44,7 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
+import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.event.world.PortalCreateEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
@@ -162,6 +164,21 @@ public final class MuseumWorldListener implements Listener {
         }
 
         return plugin.readonlyEntities().contains(entity.getType());
+    }
+
+    private boolean isVehicleEntity(Entity entity) {
+        if (entity == null) {
+            return false;
+        }
+
+        String typeName = entity.getType().name();
+
+        return typeName.endsWith("_BOAT")
+                || typeName.endsWith("_CHEST_BOAT")
+                || typeName.endsWith("_RAFT")
+                || typeName.endsWith("_CHEST_RAFT")
+                || typeName.equals("MINECART")
+                || typeName.endsWith("_MINECART");
     }
 
     private boolean isFriendlyMob(Entity entity) {
@@ -616,23 +633,32 @@ public final class MuseumWorldListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof Player player)) {
-            return;
-        }
+        Player player = getResponsiblePlayer(event.getDamager());
 
-        if (!isLocked(event.getEntity())) {
-            debugAllowed("entity-damage", event.getEntity(), player, "entity world is not locked");
-            return;
-        }
-
-        if (canBypass(player)) {
-            debugAllowed("entity-damage", event.getEntity(), player, "player has bypass/admin permission");
+        if (player == null) {
             return;
         }
 
         Entity damaged = event.getEntity();
 
-        if (plugin.blockEntityDamage() && plugin.blockedEntityTypes().contains(damaged.getType())) {
+        if (!isLocked(damaged)) {
+            debugAllowed("entity-damage", damaged, player, "entity world is not locked");
+            return;
+        }
+
+        if (canBypass(player)) {
+            debugAllowed("entity-damage", damaged, player, "player has bypass/admin permission");
+            return;
+        }
+
+        if (plugin.blockEntityDamage()) {
+            event.setCancelled(true);
+            debugDenied("entity-damage", damaged, player, "all entity damage is blocked in locked world");
+            notify(player, "entity-damage", plugin.msgEntityDamage());
+            return;
+        }
+
+        if (plugin.blockedEntityTypes().contains(damaged.getType())) {
             event.setCancelled(true);
             debugDenied("entity-damage", damaged, player, "entity type is blocked: " + damaged.getType().name());
             notify(player, "entity-damage", plugin.msgEntityDamage());
@@ -654,6 +680,18 @@ public final class MuseumWorldListener implements Listener {
         }
 
         debugAllowed("entity-damage", damaged, player, "entity did not match blocked rules: " + damaged.getType().name());
+    }
+
+    private Player getResponsiblePlayer(Entity damager) {
+        if (damager instanceof Player player) {
+            return player;
+        }
+
+        if (damager instanceof Projectile projectile && projectile.getShooter() instanceof Player player) {
+            return player;
+        }
+
+        return null;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -696,6 +734,19 @@ public final class MuseumWorldListener implements Listener {
 
         if (!plugin.blockReadonlyInteractions()) {
             debugAllowed("entity-interact", player, "read-only interactions disabled");
+            return;
+        }
+
+        /*
+         * Vehicles can also be listed under readonly-entities so they are protected
+         * from damage/breaking/removal. Entering them is controlled separately by
+         * block-vehicle-enter.
+         *
+         * If block-vehicle-enter is false, do not block the right-click that starts
+         * vehicle entry.
+         */
+        if (isVehicleEntity(clicked) && !plugin.blockVehicleEnter()) {
+            debugAllowed("vehicle-enter", clicked, player, "vehicle entering allowed by config");
             return;
         }
 
@@ -966,6 +1017,32 @@ public final class MuseumWorldListener implements Listener {
 
         return player.isGliding()
                 && chestplate.getType() == Material.ELYTRA;
+    }
+
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onVehicleEnter(VehicleEnterEvent event) {
+        if (!plugin.blockVehicleEnter()) {
+            return;
+        }
+
+        if (!(event.getEntered() instanceof Player player)) {
+            return;
+        }
+
+        if (!isLocked(event.getVehicle())) {
+            debugAllowed("vehicle-enter", event.getVehicle(), player, "vehicle world is not locked");
+            return;
+        }
+
+        if (canBypass(player)) {
+            debugAllowed("vehicle-enter", event.getVehicle(), player, "player has bypass/admin permission");
+            return;
+        }
+
+        event.setCancelled(true);
+        debugDenied("vehicle-enter", event.getVehicle(), player, "vehicle entering blocked");
+        notify(player, "vehicle-enter", plugin.msgBlocked());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

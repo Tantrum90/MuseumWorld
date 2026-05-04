@@ -160,6 +160,7 @@ public final class MuseumCommand implements BasicCommand {
         sender.sendMessage("§eBlock player bed use: " + formatBoolean(plugin.blockPlayerBedUse()));
         sender.sendMessage("§eBlock hanging break: " + formatBoolean(plugin.blockHangingBreak()));
         sender.sendMessage("§eBlock vehicle place/break: " + formatBoolean(plugin.blockVehiclePlaceBreak()));
+        sender.sendMessage("§eBlock vehicle enter: " + formatBoolean(plugin.blockVehicleEnter()));
         sender.sendMessage("§eBlock projectile use: " + formatBoolean(plugin.blockProjectileUse()));
         sender.sendMessage("§eAllow Elytra firework boost: " + formatBoolean(plugin.allowElytraFireworkBoost()));
         sender.sendMessage("§eBlock lead use: " + formatBoolean(plugin.blockLeadUse()));

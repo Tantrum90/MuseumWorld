@@ -48,6 +48,7 @@ public final class MuseumWorld extends JavaPlugin {
     private boolean blockPlayerBedUse;
     private boolean blockHangingBreak;
     private boolean blockVehiclePlaceBreak;
+    private boolean blockVehicleEnter;
     private boolean blockProjectileUse;
     private boolean allowElytraFireworkBoost;
     private boolean blockLeadUse;
@@ -158,6 +159,7 @@ public final class MuseumWorld extends JavaPlugin {
         getLogger().info("Block player bed use: " + blockPlayerBedUse);
         getLogger().info("Block hanging break: " + blockHangingBreak);
         getLogger().info("Block vehicle place/break: " + blockVehiclePlaceBreak);
+        getLogger().info("Block vehicle enter: " + blockVehicleEnter);
         getLogger().info("Block projectile use: " + blockProjectileUse);
         getLogger().info("Allow Elytra firework boost: " + allowElytraFireworkBoost);
         getLogger().info("Block lead use: " + blockLeadUse);
@@ -274,8 +276,8 @@ public final class MuseumWorld extends JavaPlugin {
         int defaultVersion = defaultConfig.getInt("config-version", 7);
         existingConfig.set("config-version", defaultVersion);
 
-        String rewrittenConfig = rewriteConfigUsingDefaultTemplate(defaultTemplate, existingConfig, defaultConfig);
         String currentConfigText = readTextFile(configFile);
+        String rewrittenConfig = rewriteConfigUsingDefaultTemplate(defaultTemplate, existingConfig, defaultConfig);
 
         if (normalizeLineEndings(currentConfigText).equals(normalizeLineEndings(rewrittenConfig))) {
             return;
@@ -1264,6 +1266,7 @@ public final class MuseumWorld extends JavaPlugin {
         blockPlayerBedUse = getConfig().getBoolean("block-player-bed-use", true);
         blockHangingBreak = getConfig().getBoolean("block-hanging-break", true);
         blockVehiclePlaceBreak = getConfig().getBoolean("block-vehicle-place-break", true);
+        blockVehicleEnter = getConfig().getBoolean("block-vehicle-enter", true);
         blockProjectileUse = getConfig().getBoolean("block-projectile-use", true);
         allowElytraFireworkBoost = getConfig().getBoolean("allow-elytra-firework-boost", true);
         blockLeadUse = getConfig().getBoolean("block-lead-use", true);
@@ -1444,6 +1447,10 @@ public final class MuseumWorld extends JavaPlugin {
 
     public boolean blockVehiclePlaceBreak() {
         return blockVehiclePlaceBreak;
+    }
+
+    public boolean blockVehicleEnter() {
+        return blockVehicleEnter;
     }
 
     public boolean blockProjectileUse() {

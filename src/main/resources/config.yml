@@ -74,6 +74,10 @@ block-hanging-break: true
 # Block placing/breaking boats, rafts, minecarts and similar vehicles in locked worlds.
 block-vehicle-place-break: true
 
+# Block players from entering boats, rafts, minecarts and other vehicles in locked worlds.
+# Useful when vehicles are used as decoration in museum/showcase worlds.
+block-vehicle-enter: true
+
 # Block throwing eggs, ender pearls, splash potions, arrows and similar projectiles/items
 # that can affect the world or entities.
 block-projectile-use: true
@@ -138,10 +142,14 @@ blocked-entity-types:
   - WOLF
   - ZOMBIE_HORSE
 
-# Block interactions with "read-only" blocks/entities (see lists below)
+# Block interactions with "read-only" blocks/entities (see lists below).
+# Note: block breaking is already blocked globally in locked worlds.
+# The lists below are for right-click/use/state-changing interactions, not for break protection.
 block-readonly-interactions: true
 
-# Extra blocks to treat as read-only (Material names)
+# Extra blocks to treat as read-only (Material names).
+# MuseumWorld is strictly config-driven:
+# blocks are treated as read-only only if they are explicitly listed here.
 readonly-blocks:
   # Containers / storage
   - CHEST
@@ -153,6 +161,18 @@ readonly-blocks:
   - DROPPER
   - CHISELED_BOOKSHELF
   - DECORATED_POT
+
+  # Copper chests
+  - COPPER_CHEST
+  - EXPOSED_COPPER_CHEST
+  - WEATHERED_COPPER_CHEST
+  - OXIDIZED_COPPER_CHEST
+  - WAXED_COPPER_CHEST
+  - WAXED_EXPOSED_COPPER_CHEST
+  - WAXED_WEATHERED_COPPER_CHEST
+  - WAXED_OXIDIZED_COPPER_CHEST
+
+  # Cauldrons / pots / fragile display blocks
   - CAULDRON
   - WATER_CAULDRON
   - LAVA_CAULDRON
@@ -234,6 +254,26 @@ readonly-blocks:
   - WAXED_WEATHERED_COPPER_BULB
   - WAXED_OXIDIZED_COPPER_BULB
 
+  # Copper golem statues / oxidation-sensitive display blocks
+  - COPPER_GOLEM_STATUE
+  - EXPOSED_COPPER_GOLEM_STATUE
+  - WEATHERED_COPPER_GOLEM_STATUE
+  - OXIDIZED_COPPER_GOLEM_STATUE
+  - WAXED_COPPER_GOLEM_STATUE
+  - WAXED_EXPOSED_COPPER_GOLEM_STATUE
+  - WAXED_WEATHERED_COPPER_GOLEM_STATUE
+  - WAXED_OXIDIZED_COPPER_GOLEM_STATUE
+
+  # Lightning rods / redstone-relevant oxidation-sensitive blocks
+  - LIGHTNING_ROD
+  - EXPOSED_LIGHTNING_ROD
+  - WEATHERED_LIGHTNING_ROD
+  - OXIDIZED_LIGHTNING_ROD
+  - WAXED_LIGHTNING_ROD
+  - WAXED_EXPOSED_LIGHTNING_ROD
+  - WAXED_WEATHERED_LIGHTNING_ROD
+  - WAXED_OXIDIZED_LIGHTNING_ROD
+
   # Candles / fragile interactive display blocks
   - CANDLE
   - WHITE_CANDLE
@@ -254,7 +294,10 @@ readonly-blocks:
   - BLACK_CANDLE
 
   # Doors / trapdoors / fence gates are NOT enabled by default.
+  # They are normal navigation blocks in many museum/showcase worlds.
   # Add them manually if you want to lock navigation blocks too.
+
+  # Doors
   # - OAK_DOOR
   # - SPRUCE_DOOR
   # - BIRCH_DOOR
@@ -276,6 +319,8 @@ readonly-blocks:
   # - WAXED_EXPOSED_COPPER_DOOR
   # - WAXED_WEATHERED_COPPER_DOOR
   # - WAXED_OXIDIZED_COPPER_DOOR
+
+  # Trapdoors
   # - OAK_TRAPDOOR
   # - SPRUCE_TRAPDOOR
   # - BIRCH_TRAPDOOR
@@ -297,6 +342,8 @@ readonly-blocks:
   # - WAXED_EXPOSED_COPPER_TRAPDOOR
   # - WAXED_WEATHERED_COPPER_TRAPDOOR
   # - WAXED_OXIDIZED_COPPER_TRAPDOOR
+
+  # Fence gates
   # - OAK_FENCE_GATE
   # - SPRUCE_FENCE_GATE
   # - BIRCH_FENCE_GATE
@@ -310,13 +357,15 @@ readonly-blocks:
   # - CRIMSON_FENCE_GATE
   # - WARPED_FENCE_GATE
 
-# Extra entities to treat as read-only (EntityType names)
+# Extra entities to treat as read-only (EntityType names).
+# MuseumWorld is strictly config-driven:
+# entities are treated as read-only only if they are explicitly listed here.
 readonly-entities:
   - ITEM_FRAME
   - GLOW_ITEM_FRAME
   - ARMOR_STAND
 
-  # Display entities
+  # Display / interaction entities
   - TEXT_DISPLAY
   - ITEM_DISPLAY
   - BLOCK_DISPLAY
@@ -355,10 +404,11 @@ readonly-entities:
   - COMMAND_BLOCK_MINECART
   - SPAWNER_MINECART
 
-  # Hanging entities (optional, but typical for “museum” worlds)
+  # Hanging entities / decorative entities
   - PAINTING
   - LEASH_KNOT
   - MANNEQUIN
+  - OMINOUS_ITEM_SPAWNER
 
 # Blocks that players can open and view, but cannot modify.
 # These blocks are allowed to open, while item movement is blocked separately.
@@ -381,6 +431,16 @@ view-only-containers:
   - COMPOSTER
   - BEACON
   - CRAFTER
+
+  # Copper chests
+  - COPPER_CHEST
+  - EXPOSED_COPPER_CHEST
+  - WEATHERED_COPPER_CHEST
+  - OXIDIZED_COPPER_CHEST
+  - WAXED_COPPER_CHEST
+  - WAXED_EXPOSED_COPPER_CHEST
+  - WAXED_WEATHERED_COPPER_CHEST
+  - WAXED_OXIDIZED_COPPER_CHEST
 
   # Shulker boxes
   - SHULKER_BOX
