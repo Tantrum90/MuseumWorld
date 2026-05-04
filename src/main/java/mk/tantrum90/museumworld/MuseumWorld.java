@@ -62,7 +62,7 @@ public final class MuseumWorld extends JavaPlugin {
     private final Set<EntityType> readonlyEntities = EnumSet.noneOf(EntityType.class);
 
     private String msgBlocked;
-    private String msgEntityDamage;
+    private final Map<String, String> actionMessages = new HashMap<>();
 
     private final Map<UUID, Map<String, Long>> lastMessageByKey = new ConcurrentHashMap<>();
 
@@ -834,15 +834,197 @@ public final class MuseumWorld extends JavaPlugin {
             return;
         }
 
-        boolean changed = copyMissingKeys(defaultMessages, existingMessages, Set.of());
+        String defaultTemplate = loadDefaultTextFromJar(fileName);
 
-        if (changed) {
-            try {
-                existingMessages.save(messageFile);
-                getLogger().info(fileName + " updated with missing keys.");
-            } catch (Exception ex) {
-                getLogger().severe("Could not save updated " + fileName + ": " + ex.getMessage());
+        if (defaultTemplate == null || defaultTemplate.isBlank()) {
+            getLogger().warning("Could not load default " + fileName + " text from plugin jar. Missing key update skipped.");
+            return;
+        }
+
+        List<String> addedKeys = new ArrayList<>();
+        List<String> preservedKeys = new ArrayList<>();
+        List<String> customKeys = new ArrayList<>();
+
+        for (String key : defaultMessages.getKeys(false)) {
+            if (existingMessages.contains(key)) {
+                preservedKeys.add(key);
+                continue;
             }
+
+            existingMessages.set(key, defaultMessages.get(key));
+            addedKeys.add(key);
+        }
+
+        int defaultFormatVersion = defaultMessages.getInt("messages-format-version", 1);
+        int existingFormatVersion = existingMessages.getInt("messages-format-version", 1);
+
+        if (existingFormatVersion < defaultFormatVersion) {
+            existingMessages.set("messages-format-version", defaultFormatVersion);
+
+            if (!addedKeys.contains("messages-format-version") && !preservedKeys.contains("messages-format-version")) {
+                addedKeys.add("messages-format-version");
+            }
+        }
+
+        for (String key : existingMessages.getKeys(false)) {
+            if (!defaultMessages.contains(key)) {
+                customKeys.add(key);
+            }
+        }
+
+        String rewrittenMessages = rewriteMessagesUsingDefaultTemplate(defaultTemplate, existingMessages, defaultMessages, customKeys);
+        String currentMessagesText = readTextFile(messageFile);
+
+        if (normalizeLineEndings(currentMessagesText).equals(normalizeLineEndings(rewrittenMessages))) {
+            return;
+        }
+
+        int maxBackups = getConfig().getInt("max-config-backups", 10);
+        backupConfigFile(messageFile, maxBackups, fileName.replace(".yml", "") + "-before-auto-update-");
+
+        try {
+            Files.writeString(messageFile.toPath(), rewrittenMessages, StandardCharsets.UTF_8);
+            getLogger().info(fileName + " updated with missing message keys while preserving existing values.");
+            writeMessagesUpdateReport(fileName, addedKeys, preservedKeys, customKeys);
+        } catch (Exception ex) {
+            getLogger().severe("Could not save updated " + fileName + ": " + ex.getMessage());
+        }
+    }
+
+    private String loadDefaultTextFromJar(String resourceName) {
+        try (InputStream stream = getResource(resourceName)) {
+            if (stream == null) {
+                return null;
+            }
+
+            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            getLogger().warning("Could not read default text resource " + resourceName + ": " + ex.getMessage());
+            return null;
+        }
+    }
+
+    private String rewriteMessagesUsingDefaultTemplate(
+            String defaultTemplate,
+            YamlConfiguration existingMessages,
+            YamlConfiguration defaultMessages,
+            List<String> customKeys
+    ) {
+        List<String> templateLines = new ArrayList<>(List.of(defaultTemplate.split("\\R", -1)));
+        List<String> outputLines = new ArrayList<>();
+        Set<String> renderedKeys = new LinkedHashSet<>();
+
+        for (String line : templateLines) {
+            String key = getTopLevelKey(line);
+
+            if (key == null) {
+                outputLines.add(line);
+                continue;
+            }
+
+            if (existingMessages.contains(key) || defaultMessages.contains(key)) {
+                outputLines.add(renderScalarLine(line, key, existingMessages, defaultMessages));
+                renderedKeys.add(key);
+            } else {
+                outputLines.add(line);
+            }
+        }
+
+        List<String> missingRenderedDefaults = new ArrayList<>();
+
+        for (String key : defaultMessages.getKeys(false)) {
+            if (!renderedKeys.contains(key)) {
+                missingRenderedDefaults.add(key);
+            }
+        }
+
+        if (!missingRenderedDefaults.isEmpty()) {
+            removeTrailingBlankLines(outputLines);
+            outputLines.add("");
+            outputLines.add("# Missing default message keys added automatically");
+
+            for (String key : missingRenderedDefaults) {
+                outputLines.add(key + ": " + formatYamlScalar(existingMessages.get(key, defaultMessages.get(key))));
+                renderedKeys.add(key);
+            }
+        }
+
+        List<String> preservedCustomKeys = new ArrayList<>();
+
+        for (String key : customKeys) {
+            if (!renderedKeys.contains(key) && existingMessages.contains(key)) {
+                preservedCustomKeys.add(key);
+            }
+        }
+
+        if (!preservedCustomKeys.isEmpty()) {
+            removeTrailingBlankLines(outputLines);
+            outputLines.add("");
+            outputLines.add("# Custom message keys preserved from existing file");
+
+            for (String key : preservedCustomKeys) {
+                outputLines.add(key + ": " + formatYamlScalar(existingMessages.get(key)));
+            }
+        }
+
+        removeTrailingBlankLines(outputLines);
+
+        return String.join(System.lineSeparator(), outputLines) + System.lineSeparator();
+    }
+
+    private void writeMessagesUpdateReport(
+            String fileName,
+            List<String> addedKeys,
+            List<String> preservedKeys,
+            List<String> customKeys
+    ) {
+        File logFolder = new File(getDataFolder(), "logs");
+
+        if (!logFolder.exists() && !logFolder.mkdirs()) {
+            getLogger().warning("Could not create logs folder for messages update report.");
+            return;
+        }
+
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+        File reportFile = new File(logFolder, "messages-update-" + fileName.replace(".yml", "") + "-" + timestamp + ".log");
+
+        StringBuilder report = new StringBuilder();
+        report.append("MuseumWorld Messages Update Report").append(System.lineSeparator());
+        report.append("Generated: ").append(timestamp).append(System.lineSeparator());
+        report.append("File: ").append(fileName).append(System.lineSeparator());
+        report.append(System.lineSeparator());
+
+        report.append("Added missing keys:").append(System.lineSeparator());
+        appendReportList(report, addedKeys);
+
+        report.append(System.lineSeparator());
+        report.append("Preserved existing keys:").append(System.lineSeparator());
+        appendReportList(report, preservedKeys);
+
+        report.append(System.lineSeparator());
+        report.append("Custom keys kept:").append(System.lineSeparator());
+        appendReportList(report, customKeys);
+
+        report.append(System.lineSeparator());
+        report.append("Overwritten text values:").append(System.lineSeparator());
+        report.append("- none").append(System.lineSeparator());
+
+        try {
+            Files.writeString(reportFile.toPath(), report.toString(), StandardCharsets.UTF_8);
+            getLogger().info("Messages update report saved: logs/" + reportFile.getName());
+        } catch (Exception ex) {
+            getLogger().warning("Could not write messages update report: " + ex.getMessage());
+        }
+    }
+
+    private void appendReportList(StringBuilder report, List<String> values) {
+        if (values == null || values.isEmpty()) {
+            report.append("- none").append(System.lineSeparator());
+            return;
+        }
+
+        for (String value : values) {
+            report.append("- ").append(value).append(System.lineSeparator());
         }
     }
 
@@ -861,46 +1043,6 @@ public final class MuseumWorld extends JavaPlugin {
         }
     }
 
-    private boolean copyMissingKeys(ConfigurationSection source, ConfigurationSection target, Set<String> protectedKeys) {
-        boolean changed = false;
-
-        for (String key : source.getKeys(false)) {
-            String fullPath = buildPath(source, key);
-
-            if (isProtectedConfigKey(key, fullPath, protectedKeys)) {
-                getLogger().info("Skipped protected config key during missing-key update: " + fullPath);
-                continue;
-            }
-
-            Object sourceValue = source.get(key);
-
-            if (sourceValue instanceof ConfigurationSection sourceSection) {
-                ConfigurationSection targetSection = target.getConfigurationSection(key);
-
-                if (targetSection == null) {
-                    target.createSection(key);
-                    targetSection = target.getConfigurationSection(key);
-                    changed = true;
-                }
-
-                if (targetSection != null) {
-                    if (copyMissingKeys(sourceSection, targetSection, protectedKeys)) {
-                        changed = true;
-                    }
-                }
-
-                continue;
-            }
-
-            if (!target.contains(key)) {
-                target.set(key, sourceValue);
-                getLogger().info("Added missing key: " + fullPath);
-                changed = true;
-            }
-        }
-
-        return changed;
-    }
 
     private boolean copyMissingListValues(ConfigurationSection source, ConfigurationSection target, Set<String> protectedKeys) {
         boolean changed = false;
@@ -1369,8 +1511,43 @@ public final class MuseumWorld extends JavaPlugin {
 
         YamlConfiguration loadedMessages = YamlConfiguration.loadConfiguration(f);
 
-        msgBlocked = color(loadedMessages.getString("blocked-message", "§6Museum world: §eEnjoy looking around!"));
-        msgEntityDamage = color(loadedMessages.getString("entity-damage-message", "§6Museum world: §cYou cannot damage entities here."));
+        actionMessages.clear();
+
+        msgBlocked = color(loadedMessages.getString(
+                "blocked-message",
+                "§6Museum world: §eThis action is not allowed here."
+        ));
+        String msgEntityDamage = color(loadedMessages.getString(
+                "entity-damage-message",
+                msgBlocked
+        ));
+
+        loadActionMessage(loadedMessages, "block-break-message", msgBlocked);
+        loadActionMessage(loadedMessages, "block-place-message", msgBlocked);
+        loadActionMessage(loadedMessages, "inventory-message", msgBlocked);
+        loadActionMessage(loadedMessages, "readonly-block-message", msgBlocked);
+        loadActionMessage(loadedMessages, "item-drop-message", msgBlocked);
+        loadActionMessage(loadedMessages, "item-pickup-message", msgBlocked);
+        loadActionMessage(loadedMessages, "entity-damage-message", msgEntityDamage);
+        loadActionMessage(loadedMessages, "readonly-entity-message", msgBlocked);
+        loadActionMessage(loadedMessages, "item-frame-message", msgBlocked);
+        loadActionMessage(loadedMessages, "armor-stand-message", msgBlocked);
+        loadActionMessage(loadedMessages, "hanging-entity-message", msgBlocked);
+        loadActionMessage(loadedMessages, "vehicle-place-break-message", msgBlocked);
+        loadActionMessage(loadedMessages, "vehicle-enter-message", msgBlocked);
+        loadActionMessage(loadedMessages, "bucket-use-message", msgBlocked);
+        loadActionMessage(loadedMessages, "fire-use-message", msgBlocked);
+        loadActionMessage(loadedMessages, "tnt-ignite-message", msgBlocked);
+        loadActionMessage(loadedMessages, "portal-create-message", msgBlocked);
+        loadActionMessage(loadedMessages, "bone-meal-message", msgBlocked);
+        loadActionMessage(loadedMessages, "bed-use-message", msgBlocked);
+        loadActionMessage(loadedMessages, "projectile-use-message", msgBlocked);
+        loadActionMessage(loadedMessages, "lead-use-message", msgBlocked);
+        loadActionMessage(loadedMessages, "name-tag-use-message", msgBlocked);
+    }
+
+    private void loadActionMessage(YamlConfiguration messagesConfig, String key, String fallback) {
+        actionMessages.put(key, color(messagesConfig.getString(key, fallback)));
     }
 
     private String color(String s) {
@@ -1515,12 +1692,13 @@ public final class MuseumWorld extends JavaPlugin {
         return readonlyEntities;
     }
 
-    public String msgBlocked() {
-        return msgBlocked;
-    }
 
-    public String msgEntityDamage() {
-        return msgEntityDamage;
+    public String message(String key) {
+        if (key == null || key.isBlank()) {
+            return msgBlocked;
+        }
+
+        return actionMessages.getOrDefault(key, msgBlocked);
     }
 
 

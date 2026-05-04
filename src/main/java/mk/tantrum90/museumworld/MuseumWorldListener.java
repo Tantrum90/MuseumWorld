@@ -308,7 +308,7 @@ public final class MuseumWorldListener implements Listener {
 
         event.setCancelled(true);
         debugDenied("block-break", player, "locked world protection");
-        notify(player, "block-break", plugin.msgBlocked());
+        notify(player, "block-break", plugin.message("block-break-message"));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -327,7 +327,7 @@ public final class MuseumWorldListener implements Listener {
 
         event.setCancelled(true);
         debugDenied("block-place", player, "locked world protection");
-        notify(player, "block-place", plugin.msgBlocked());
+        notify(player, "block-place", plugin.message("block-place-message"));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -360,28 +360,28 @@ public final class MuseumWorldListener implements Listener {
         if (plugin.blockBucketUse() && isBucketItem(usedItem)) {
             event.setCancelled(true);
             debugDenied("bucket-use", player, "bucket use blocked: " + usedItem.name());
-            notify(player, "bucket-use", plugin.msgBlocked());
+            notify(player, "bucket-use", plugin.message("bucket-use-message"));
             return;
         }
 
         if (plugin.blockFireUse() && isFireStarter(usedItem)) {
             event.setCancelled(true);
             debugDenied("fire-use", player, "fire starter blocked: " + usedItem.name());
-            notify(player, "fire-use", plugin.msgBlocked());
+            notify(player, "fire-use", plugin.message("fire-use-message"));
             return;
         }
 
         if (plugin.blockBoneMealUse() && usedItem == Material.BONE_MEAL) {
             event.setCancelled(true);
             debugDenied("bone-meal-use", player, "bone meal use blocked");
-            notify(player, "bone-meal-use", plugin.msgBlocked());
+            notify(player, "bone-meal-use", plugin.message("bone-meal-message"));
             return;
         }
 
         if (plugin.blockVehiclePlaceBreak() && isVehicleItem(usedItem)) {
             event.setCancelled(true);
             debugDenied("vehicle-place", player, "vehicle placement/use blocked: " + usedItem.name());
-            notify(player, "vehicle-place", plugin.msgBlocked());
+            notify(player, "vehicle-place", plugin.message("vehicle-place-break-message"));
             return;
         }
 
@@ -391,7 +391,7 @@ public final class MuseumWorldListener implements Listener {
                 && isFireStarter(usedItem)) {
             event.setCancelled(true);
             debugDenied("tnt-ignite", player, "TNT ignition blocked");
-            notify(player, "tnt-ignite", plugin.msgBlocked());
+            notify(player, "tnt-ignite", plugin.message("tnt-ignite-message"));
             return;
         }
 
@@ -400,7 +400,7 @@ public final class MuseumWorldListener implements Listener {
                 && isBedBlock(clickedBlock.getType())) {
             event.setCancelled(true);
             debugDenied("bed-use", player, "bed use blocked");
-            notify(player, "bed-use", plugin.msgBlocked());
+            notify(player, "bed-use", plugin.message("bed-use-message"));
             return;
         }
 
@@ -431,7 +431,7 @@ public final class MuseumWorldListener implements Listener {
 
         event.setCancelled(true);
         debugDenied("block-interact", player, "read-only block interaction blocked: " + material.name());
-        notify(player, "readonly-block", plugin.msgBlocked());
+        notify(player, "readonly-block", plugin.message("readonly-block-message"));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -454,7 +454,7 @@ public final class MuseumWorldListener implements Listener {
 
         event.setCancelled(true);
         debugDenied("item-drop", player, "item dropping blocked");
-        notify(player, "item-drop", plugin.msgBlocked());
+        notify(player, "item-drop", plugin.message("item-drop-message"));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -479,7 +479,7 @@ public final class MuseumWorldListener implements Listener {
 
         event.setCancelled(true);
         debugDenied("item-pickup", player, "item pickup blocked");
-        notify(player, "item-pickup", plugin.msgBlocked());
+        notify(player, "item-pickup", plugin.message("item-pickup-message"));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -502,7 +502,7 @@ public final class MuseumWorldListener implements Listener {
 
         event.setCancelled(true);
         debugDenied("bucket-empty", player, "bucket empty blocked");
-        notify(player, "bucket-empty", plugin.msgBlocked());
+        notify(player, "bucket-empty", plugin.message("bucket-use-message"));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -525,7 +525,7 @@ public final class MuseumWorldListener implements Listener {
 
         event.setCancelled(true);
         debugDenied("bucket-fill", player, "bucket fill blocked");
-        notify(player, "bucket-fill", plugin.msgBlocked());
+        notify(player, "bucket-fill", plugin.message("bucket-use-message"));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -547,14 +547,14 @@ public final class MuseumWorldListener implements Listener {
         if (rawSlot >= 0 && rawSlot < topSize) {
             event.setCancelled(true);
             debugDenied("inventory-click", player, "click inside protected top inventory");
-            notify(player, "inventory-click", plugin.msgBlocked());
+            notify(player, "inventory-click", plugin.message("inventory-message"));
             return;
         }
 
         if (event.isShiftClick()) {
             event.setCancelled(true);
             debugDenied("inventory-shift-click", player, "shift-click involving protected inventory");
-            notify(player, "inventory-shift-click", plugin.msgBlocked());
+            notify(player, "inventory-shift-click", plugin.message("inventory-message"));
             return;
         }
 
@@ -565,7 +565,7 @@ public final class MuseumWorldListener implements Listener {
                  UNKNOWN -> {
                 event.setCancelled(true);
                 debugDenied("inventory-move", player, "inventory action can move items: " + event.getAction().name());
-                notify(player, "inventory-move", plugin.msgBlocked());
+                notify(player, "inventory-move", plugin.message("inventory-message"));
             }
             default -> debugAllowed("inventory-click", player, "player inventory click allowed while container is open");
         }
@@ -590,7 +590,7 @@ public final class MuseumWorldListener implements Listener {
             if (rawSlot >= 0 && rawSlot < topSize) {
                 event.setCancelled(true);
                 debugDenied("inventory-drag", player, "drag into protected top inventory");
-                notify(player, "inventory-drag", plugin.msgBlocked());
+                notify(player, "inventory-drag", plugin.message("inventory-message"));
                 return;
             }
         }
@@ -647,7 +647,7 @@ public final class MuseumWorldListener implements Listener {
         if (isReadonlyEntity(damaged)) {
             event.setCancelled(true);
             debugDenied("entity-damage", damaged, player, "entity is read-only: " + damaged.getType().name());
-            notify(player, "entity-damage", plugin.msgEntityDamage());
+            notify(player, "entity-damage", plugin.message("entity-damage-message"));
             return;
         }
 
@@ -659,7 +659,7 @@ public final class MuseumWorldListener implements Listener {
         if (plugin.blockEntityDamage() && plugin.blockedEntityTypes().contains(damaged.getType())) {
             event.setCancelled(true);
             debugDenied("entity-damage", damaged, player, "entity type is blocked: " + damaged.getType().name());
-            notify(player, "entity-damage", plugin.msgEntityDamage());
+            notify(player, "entity-damage", plugin.message("entity-damage-message"));
             return;
         }
 
@@ -698,21 +698,21 @@ public final class MuseumWorldListener implements Listener {
         if (plugin.blockItemFrameRotation() && isItemFrame(clicked)) {
             event.setCancelled(true);
             debugDenied("item-frame-rotation", clicked, player, "item frame interaction/rotation blocked");
-            notify(player, "item-frame-rotation", plugin.msgBlocked());
+            notify(player, "item-frame-rotation", plugin.message("item-frame-message"));
             return;
         }
 
         if (plugin.blockLeadUse() && usedItem == Material.LEAD) {
             event.setCancelled(true);
             debugDenied("lead-use", clicked, player, "lead use blocked");
-            notify(player, "lead-use", plugin.msgBlocked());
+            notify(player, "lead-use", plugin.message("lead-use-message"));
             return;
         }
 
         if (plugin.blockNameTagUse() && usedItem == Material.NAME_TAG) {
             event.setCancelled(true);
             debugDenied("name-tag-use", clicked, player, "name tag use blocked");
-            notify(player, "name-tag-use", plugin.msgBlocked());
+            notify(player, "name-tag-use", plugin.message("name-tag-use-message"));
             return;
         }
 
@@ -737,7 +737,7 @@ public final class MuseumWorldListener implements Listener {
         if (isReadonlyEntity(clicked)) {
             event.setCancelled(true);
             debugDenied("entity-interact", clicked, player, "entity is read-only: " + clicked.getType().name());
-            notify(player, "readonly-entity", plugin.msgBlocked());
+            notify(player, "readonly-entity", plugin.message("readonly-entity-message"));
             return;
         }
 
@@ -764,7 +764,7 @@ public final class MuseumWorldListener implements Listener {
 
         event.setCancelled(true);
         debugDenied("armor-stand", player, "armor stand manipulation blocked");
-        notify(player, "armor-stand", plugin.msgBlocked());
+        notify(player, "armor-stand", plugin.message("armor-stand-message"));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -789,7 +789,7 @@ public final class MuseumWorldListener implements Listener {
 
         event.setCancelled(true);
         debugDenied("hanging-break", event.getEntity(), player, "hanging entity removal blocked");
-        notify(player, "hanging-break", plugin.msgBlocked());
+        notify(player, "hanging-break", plugin.message("hanging-entity-message"));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -808,7 +808,7 @@ public final class MuseumWorldListener implements Listener {
 
         event.setCancelled(true);
         debugDenied("hanging-place", player, "hanging entity placement blocked");
-        notify(player, "hanging-place", plugin.msgBlocked());
+        notify(player, "hanging-place", plugin.message("hanging-entity-message"));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -928,7 +928,7 @@ public final class MuseumWorldListener implements Listener {
 
         if (player != null) {
             debugDenied("bone-meal-use", player, "bone meal fertilization blocked");
-            notify(player, "bone-meal-use", plugin.msgBlocked());
+            notify(player, "bone-meal-use", plugin.message("bone-meal-message"));
         }
     }
 
@@ -952,7 +952,7 @@ public final class MuseumWorldListener implements Listener {
 
         event.setCancelled(true);
         debugDenied("bed-use", player, "bed enter blocked");
-        notify(player, "bed-use", plugin.msgBlocked());
+        notify(player, "bed-use", plugin.message("bed-use-message"));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -984,7 +984,7 @@ public final class MuseumWorldListener implements Listener {
 
         event.setCancelled(true);
         debugDenied("projectile-use", player, "projectile launch blocked: " + event.getEntityType().name());
-        notify(player, "projectile-use", plugin.msgBlocked());
+        notify(player, "projectile-use", plugin.message("projectile-use-message"));
     }
 
 
@@ -1026,7 +1026,7 @@ public final class MuseumWorldListener implements Listener {
 
         event.setCancelled(true);
         debugDenied("vehicle-enter", event.getVehicle(), player, "vehicle entering blocked");
-        notify(player, "vehicle-enter", plugin.msgBlocked());
+        notify(player, "vehicle-enter", plugin.message("vehicle-enter-message"));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -1051,7 +1051,7 @@ public final class MuseumWorldListener implements Listener {
 
         event.setCancelled(true);
         debugDenied("vehicle-damage", event.getVehicle(), player, "vehicle damage blocked");
-        notify(player, "vehicle-damage", plugin.msgBlocked());
+        notify(player, "vehicle-damage", plugin.message("vehicle-place-break-message"));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -1076,7 +1076,7 @@ public final class MuseumWorldListener implements Listener {
 
         event.setCancelled(true);
         debugDenied("vehicle-break", event.getVehicle(), player, "vehicle breaking blocked");
-        notify(player, "vehicle-break", plugin.msgBlocked());
+        notify(player, "vehicle-break", plugin.message("vehicle-place-break-message"));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

@@ -1,10 +1,40 @@
-messages-format-version: 1
+messages-format-version: 2
 
-# Message shown when an inventory modification is blocked (taking/placing items).
-blocked-message: "§6Музејски свет: §eУживај во разгледувањето!"
+# General fallback message.
+blocked-message: "§6Музејски свет: §eОваа акција не е дозволена овде."
 
-# Message shown when entity damage is blocked.
-entity-damage-message: "§6Музејски свет: §cНе можеш да повредиш/убиеш животни овде."
+# Blocks
+block-break-message: "§6Музејски свет: §cНе можеш да кршиш блокови овде."
+block-place-message: "§6Музејски свет: §cНе можеш да поставуваш блокови овде."
+readonly-block-message: "§6Музејски свет: §eОвој блок е заштитен."
 
-# Message shown when friendly mob damage is blocked.
-friendly-damage-message: "§6Музејски свет: §cНе можеш да повредиш животни овде."
+# Inventory / containers
+inventory-message: "§6Музејски свет: §eМожеш да разгледуваш, но не можеш да преместуваш предмети."
+item-drop-message: "§6Музејски свет: §cНе можеш да фрлаш предмети овде."
+item-pickup-message: "§6Музејски свет: §cНе можеш да собираш предмети овде."
+
+# Entities / mobs
+entity-damage-message: "§6Музејски свет: §cНе можеш да правиш штета овде."
+readonly-entity-message: "§6Музејски свет: §eОвој ентитет е заштитен."
+item-frame-message: "§6Музејски свет: §cНе можеш да ротираш или вадиш предмети од рамки."
+armor-stand-message: "§6Музејски свет: §cНе можеш да менуваш armor stand."
+hanging-entity-message: "§6Музејски свет: §cНе можеш да отстрануваш слики или висечки предмети овде."
+
+# Vehicles
+vehicle-place-break-message: "§6Музејски свет: §cНе можеш да поставуваш или кршиш возила овде."
+vehicle-enter-message: "§6Музејски свет: §cНе можеш да влегуваш во возила овде."
+
+# Buckets / fire / TNT / portals
+bucket-use-message: "§6Музејски свет: §cНе можеш да користиш кофи овде."
+fire-use-message: "§6Музејски свет: §cНе можеш да користиш оган овде."
+tnt-ignite-message: "§6Музејски свет: §cНе можеш да активираш TNT овде."
+portal-create-message: "§6Музејски свет: §cНе можеш да креираш портали овде."
+
+# World state changes
+bone-meal-message: "§6Музејски свет: §cНе можеш да користиш bone meal овде."
+bed-use-message: "§6Музејски свет: §cНе можеш да користиш кревети овде."
+
+# Projectiles / special items
+projectile-use-message: "§6Музејски свет: §cНе можеш да користиш проектили овде."
+lead-use-message: "§6Музејски свет: §cНе можеш да користиш 'поводници' овде."
+name-tag-use-message: "§6Музејски свет: §cНе можеш да користиш name tags овде."
