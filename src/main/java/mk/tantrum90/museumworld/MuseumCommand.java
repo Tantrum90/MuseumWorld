@@ -25,8 +25,14 @@ public final class MuseumCommand implements BasicCommand {
     public void execute(CommandSourceStack source, String[] args) {
         CommandSender sender = source.getSender();
 
+        if (args.length > 0 && args[0].equalsIgnoreCase("version")) {
+            sendVersion(sender);
+            return;
+        }
+
         if (!sender.hasPermission("museumworld.admin")) {
             sender.sendMessage("§cYou don't have permission.");
+            sender.sendMessage("§7You can use §e/museum version §7to view plugin information.");
             return;
         }
 
@@ -76,7 +82,38 @@ public final class MuseumCommand implements BasicCommand {
     }
 
     private void sendUsage(CommandSender sender) {
-        sender.sendMessage("§eUsage: /museum <list|add|remove|reload|status|debug|lockcurrentworld|unlockcurrentworld>");
+        sender.sendMessage("§eUsage: /museum <version|list|add|remove|reload|status|debug|lockcurrentworld|unlockcurrentworld>");
+    }
+
+    private void sendVersion(CommandSender sender) {
+        String version = plugin.getPluginMeta().getVersion();
+        String channel = detectChannel(version);
+
+        sender.sendMessage("§6§m----------------------------------------");
+        sender.sendMessage("§6MuseumWorld");
+        sender.sendMessage("§eVersion: §f" + version);
+        sender.sendMessage("§eChannel: §f" + channel);
+        sender.sendMessage("§eTarget API: §fPaper 26.1.2");
+        sender.sendMessage("§eAuthor: §fTantrum90MK");
+        sender.sendMessage("§6§m----------------------------------------");
+    }
+
+    private String detectChannel(String version) {
+        if (version.isBlank()) {
+            return "UNKNOWN";
+        }
+
+        String normalized = version.trim().toUpperCase(Locale.ROOT);
+
+        if (normalized.endsWith("-DEV")) {
+            return "DEVELOPMENT";
+        }
+
+        if (normalized.endsWith("-BETA")) {
+            return "BETA";
+        }
+
+        return "STABLE";
     }
 
     private void lockCurrentWorld(CommandSender sender) {
@@ -225,11 +262,10 @@ public final class MuseumCommand implements BasicCommand {
     public Collection<String> suggest(CommandSourceStack source, String[] args) {
         CommandSender sender = source.getSender();
 
-        if (!sender.hasPermission("museumworld.admin")) {
-            return List.of();
-        }
+        List<String> publicSubcommands = List.of("version");
 
-        List<String> subcommands = Arrays.asList(
+        List<String> adminSubcommands = Arrays.asList(
+                "version",
                 "list",
                 "add",
                 "remove",
@@ -240,12 +276,19 @@ public final class MuseumCommand implements BasicCommand {
                 "unlockcurrentworld"
         );
 
+        boolean isAdmin = sender.hasPermission("museumworld.admin");
+        List<String> availableSubcommands = isAdmin ? adminSubcommands : publicSubcommands;
+
         if (args.length == 0) {
-            return subcommands;
+            return availableSubcommands;
         }
 
         if (args.length == 1) {
-            return StringUtil.copyPartialMatches(args[0], subcommands, new ArrayList<>());
+            return StringUtil.copyPartialMatches(args[0], availableSubcommands, new ArrayList<>());
+        }
+
+        if (!isAdmin) {
+            return List.of();
         }
 
         if (args.length == 2 && args[0].equalsIgnoreCase("add")) {
@@ -268,8 +311,4 @@ public final class MuseumCommand implements BasicCommand {
         return List.of();
     }
 
-    @Override
-    public String permission() {
-        return "museumworld.admin";
-    }
 }

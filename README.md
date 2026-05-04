@@ -278,6 +278,7 @@ Main command:
 Available subcommands:
 
 ```text
+/museum version
 /museum list
 /museum add <world>
 /museum remove <world>
@@ -289,6 +290,22 @@ Available subcommands:
 ```
 
 ### Command overview
+
+```text
+/museum version
+```
+
+Shows public plugin information. This command is available to all players and does not require `museumworld.admin`.
+
+Example output:
+
+```text
+MuseumWorld
+Version: 1.0.4-DEV
+Channel: DEVELOPMENT
+Target API: Paper 26.1.2
+Author: Tantrum90MK
+```
 
 ```text
 /museum list
@@ -358,7 +375,7 @@ Removes the world where the player is currently standing from the protected worl
 museumworld.admin
 ```
 
-Allows use of `/museum` commands.
+Allows use of administrative `/museum` commands. The `/museum version` subcommand is public and does not require this permission.
 
 ```text
 museumworld.bypass
