@@ -34,6 +34,60 @@ block-entity-damage: true
 # Legacy setting kept for compatibility: block damage to friendly/passive mobs
 block-friendly-damage: true
 
+# Block players from dropping items in locked worlds.
+block-item-drop: true
+
+# Block players from picking up dropped items in locked worlds.
+block-item-pickup: true
+
+# Block bucket fill/empty actions in locked worlds.
+block-bucket-use: true
+
+# Block flint and steel, fire charges, and fire ignition in locked worlds.
+block-fire-use: true
+
+# Block natural growth/spread/decay changes in locked worlds.
+# Recommended false by default because it can be more aggressive.
+block-natural-growth: false
+
+# Block bone meal use in locked worlds.
+block-bone-meal-use: true
+
+# Block Nether portal creation in locked worlds.
+block-portal-creation: true
+
+# Block item frame rotation in locked worlds.
+block-item-frame-rotation: true
+
+# Block armor stand manipulation in locked worlds.
+block-armor-stand-manipulation: true
+
+# Block TNT ignition in locked worlds.
+block-tnt-ignite: true
+
+# Block bed use in locked worlds.
+block-player-bed-use: true
+
+# Block breaking/removing paintings, item frames, leash knots and other hanging entities.
+block-hanging-break: true
+
+# Block placing/breaking boats, rafts, minecarts and similar vehicles in locked worlds.
+block-vehicle-place-break: true
+
+# Block throwing eggs, ender pearls, splash potions, arrows and similar projectiles/items
+# that can affect the world or entities.
+block-projectile-use: true
+
+# If true, firework rockets are still allowed for Elytra boosting
+# while the player is gliding with Elytra equipped.
+allow-elytra-firework-boost: true
+
+# Block placing/removing leads on entities and fences.
+block-lead-use: true
+
+# Block name tags on entities in locked worlds.
+block-name-tag-use: true
+
 # Additionally block damaging these entity types (even if block-entity-damage is false)
 blocked-entity-types:
   - ALLAY
@@ -87,9 +141,6 @@ blocked-entity-types:
 # Block interactions with "read-only" blocks/entities (see lists below)
 block-readonly-interactions: true
 
-# Automatically treat common containers/interactive blocks as read-only
-readonly-blocks-auto: true
-
 # Extra blocks to treat as read-only (Material names)
 readonly-blocks:
   # Containers / storage
@@ -102,6 +153,14 @@ readonly-blocks:
   - DROPPER
   - CHISELED_BOOKSHELF
   - DECORATED_POT
+  - CAULDRON
+  - WATER_CAULDRON
+  - LAVA_CAULDRON
+  - POWDER_SNOW_CAULDRON
+  - FLOWER_POT
+  - CAKE
+  - TURTLE_EGG
+  - DRAGON_EGG
 
   # Shulker boxes
   - SHULKER_BOX
@@ -175,14 +234,93 @@ readonly-blocks:
   - WAXED_WEATHERED_COPPER_BULB
   - WAXED_OXIDIZED_COPPER_BULB
 
-# Automatically treat common interactive entities as read-only
-readonly-entities-auto: true
+  # Candles / fragile interactive display blocks
+  - CANDLE
+  - WHITE_CANDLE
+  - ORANGE_CANDLE
+  - MAGENTA_CANDLE
+  - LIGHT_BLUE_CANDLE
+  - YELLOW_CANDLE
+  - LIME_CANDLE
+  - PINK_CANDLE
+  - GRAY_CANDLE
+  - LIGHT_GRAY_CANDLE
+  - CYAN_CANDLE
+  - PURPLE_CANDLE
+  - BLUE_CANDLE
+  - BROWN_CANDLE
+  - GREEN_CANDLE
+  - RED_CANDLE
+  - BLACK_CANDLE
+
+  # Doors / trapdoors / fence gates are NOT enabled by default.
+  # Add them manually if you want to lock navigation blocks too.
+  # - OAK_DOOR
+  # - SPRUCE_DOOR
+  # - BIRCH_DOOR
+  # - JUNGLE_DOOR
+  # - ACACIA_DOOR
+  # - DARK_OAK_DOOR
+  # - MANGROVE_DOOR
+  # - CHERRY_DOOR
+  # - PALE_OAK_DOOR
+  # - BAMBOO_DOOR
+  # - CRIMSON_DOOR
+  # - WARPED_DOOR
+  # - IRON_DOOR
+  # - COPPER_DOOR
+  # - EXPOSED_COPPER_DOOR
+  # - WEATHERED_COPPER_DOOR
+  # - OXIDIZED_COPPER_DOOR
+  # - WAXED_COPPER_DOOR
+  # - WAXED_EXPOSED_COPPER_DOOR
+  # - WAXED_WEATHERED_COPPER_DOOR
+  # - WAXED_OXIDIZED_COPPER_DOOR
+  # - OAK_TRAPDOOR
+  # - SPRUCE_TRAPDOOR
+  # - BIRCH_TRAPDOOR
+  # - JUNGLE_TRAPDOOR
+  # - ACACIA_TRAPDOOR
+  # - DARK_OAK_TRAPDOOR
+  # - MANGROVE_TRAPDOOR
+  # - CHERRY_TRAPDOOR
+  # - PALE_OAK_TRAPDOOR
+  # - BAMBOO_TRAPDOOR
+  # - CRIMSON_TRAPDOOR
+  # - WARPED_TRAPDOOR
+  # - IRON_TRAPDOOR
+  # - COPPER_TRAPDOOR
+  # - EXPOSED_COPPER_TRAPDOOR
+  # - WEATHERED_COPPER_TRAPDOOR
+  # - OXIDIZED_COPPER_TRAPDOOR
+  # - WAXED_COPPER_TRAPDOOR
+  # - WAXED_EXPOSED_COPPER_TRAPDOOR
+  # - WAXED_WEATHERED_COPPER_TRAPDOOR
+  # - WAXED_OXIDIZED_COPPER_TRAPDOOR
+  # - OAK_FENCE_GATE
+  # - SPRUCE_FENCE_GATE
+  # - BIRCH_FENCE_GATE
+  # - JUNGLE_FENCE_GATE
+  # - ACACIA_FENCE_GATE
+  # - DARK_OAK_FENCE_GATE
+  # - MANGROVE_FENCE_GATE
+  # - CHERRY_FENCE_GATE
+  # - PALE_OAK_FENCE_GATE
+  # - BAMBOO_FENCE_GATE
+  # - CRIMSON_FENCE_GATE
+  # - WARPED_FENCE_GATE
 
 # Extra entities to treat as read-only (EntityType names)
 readonly-entities:
   - ITEM_FRAME
   - GLOW_ITEM_FRAME
   - ARMOR_STAND
+
+  # Display entities
+  - TEXT_DISPLAY
+  - ITEM_DISPLAY
+  - BLOCK_DISPLAY
+  - INTERACTION
 
   # Boats / rafts
   - OAK_BOAT
@@ -242,6 +380,7 @@ view-only-containers:
   - CHISELED_BOOKSHELF
   - COMPOSTER
   - BEACON
+  - CRAFTER
 
   # Shulker boxes
   - SHULKER_BOX

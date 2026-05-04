@@ -147,9 +147,24 @@ public final class MuseumCommand implements BasicCommand {
 
         sender.sendMessage("§eBlock entity damage: " + formatBoolean(plugin.blockEntityDamage()));
         sender.sendMessage("§eBlock friendly damage: " + formatBoolean(plugin.blockFriendlyDamage()));
+        sender.sendMessage("§eBlock item drop: " + formatBoolean(plugin.blockItemDrop()));
+        sender.sendMessage("§eBlock item pickup: " + formatBoolean(plugin.blockItemPickup()));
+        sender.sendMessage("§eBlock bucket use: " + formatBoolean(plugin.blockBucketUse()));
+        sender.sendMessage("§eBlock fire use: " + formatBoolean(plugin.blockFireUse()));
+        sender.sendMessage("§eBlock natural growth: " + formatBoolean(plugin.blockNaturalGrowth()));
+        sender.sendMessage("§eBlock bone meal use: " + formatBoolean(plugin.blockBoneMealUse()));
+        sender.sendMessage("§eBlock portal creation: " + formatBoolean(plugin.blockPortalCreation()));
+        sender.sendMessage("§eBlock item frame rotation: " + formatBoolean(plugin.blockItemFrameRotation()));
+        sender.sendMessage("§eBlock armor stand manipulation: " + formatBoolean(plugin.blockArmorStandManipulation()));
+        sender.sendMessage("§eBlock TNT ignite: " + formatBoolean(plugin.blockTntIgnite()));
+        sender.sendMessage("§eBlock player bed use: " + formatBoolean(plugin.blockPlayerBedUse()));
+        sender.sendMessage("§eBlock hanging break: " + formatBoolean(plugin.blockHangingBreak()));
+        sender.sendMessage("§eBlock vehicle place/break: " + formatBoolean(plugin.blockVehiclePlaceBreak()));
+        sender.sendMessage("§eBlock projectile use: " + formatBoolean(plugin.blockProjectileUse()));
+        sender.sendMessage("§eAllow Elytra firework boost: " + formatBoolean(plugin.allowElytraFireworkBoost()));
+        sender.sendMessage("§eBlock lead use: " + formatBoolean(plugin.blockLeadUse()));
+        sender.sendMessage("§eBlock name tag use: " + formatBoolean(plugin.blockNameTagUse()));
         sender.sendMessage("§eRead-only interactions: " + formatBoolean(plugin.blockReadonlyInteractions()));
-        sender.sendMessage("§eRead-only blocks auto: " + formatBoolean(plugin.readonlyBlocksAuto()));
-        sender.sendMessage("§eRead-only entities auto: " + formatBoolean(plugin.readonlyEntitiesAuto()));
         sender.sendMessage("§eUpdate lists on next reload: " + formatBoolean(plugin.getConfig().getBoolean("update-lists-on-next-reload", false)));
 
         sender.sendMessage("§eLocked worlds: §f" + lockedWorlds.size());

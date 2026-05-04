@@ -35,15 +35,30 @@ public final class MuseumWorld extends JavaPlugin {
 
     private boolean blockEntityDamage;
     private boolean blockFriendlyDamage;
+    private boolean blockItemDrop;
+    private boolean blockItemPickup;
+    private boolean blockBucketUse;
+    private boolean blockFireUse;
+    private boolean blockNaturalGrowth;
+    private boolean blockBoneMealUse;
+    private boolean blockPortalCreation;
+    private boolean blockItemFrameRotation;
+    private boolean blockArmorStandManipulation;
+    private boolean blockTntIgnite;
+    private boolean blockPlayerBedUse;
+    private boolean blockHangingBreak;
+    private boolean blockVehiclePlaceBreak;
+    private boolean blockProjectileUse;
+    private boolean allowElytraFireworkBoost;
+    private boolean blockLeadUse;
+    private boolean blockNameTagUse;
     private final Set<EntityType> blockedEntityTypes = EnumSet.noneOf(EntityType.class);
 
     private boolean blockReadonlyInteractions;
-    private boolean readonlyBlocksAuto;
     private final Set<Material> readonlyBlocks = EnumSet.noneOf(Material.class);
 
     private final Set<Material> viewOnlyContainers = EnumSet.noneOf(Material.class);
 
-    private boolean readonlyEntitiesAuto;
     private final Set<EntityType> readonlyEntities = EnumSet.noneOf(EntityType.class);
 
     private String msgBlocked;
@@ -130,9 +145,24 @@ public final class MuseumWorld extends JavaPlugin {
         getLogger().info("Message cooldown: " + cooldownMs + " ms");
         getLogger().info("Block entity damage: " + blockEntityDamage);
         getLogger().info("Block friendly damage: " + blockFriendlyDamage);
+        getLogger().info("Block item drop: " + blockItemDrop);
+        getLogger().info("Block item pickup: " + blockItemPickup);
+        getLogger().info("Block bucket use: " + blockBucketUse);
+        getLogger().info("Block fire use: " + blockFireUse);
+        getLogger().info("Block natural growth: " + blockNaturalGrowth);
+        getLogger().info("Block bone meal use: " + blockBoneMealUse);
+        getLogger().info("Block portal creation: " + blockPortalCreation);
+        getLogger().info("Block item frame rotation: " + blockItemFrameRotation);
+        getLogger().info("Block armor stand manipulation: " + blockArmorStandManipulation);
+        getLogger().info("Block TNT ignite: " + blockTntIgnite);
+        getLogger().info("Block player bed use: " + blockPlayerBedUse);
+        getLogger().info("Block hanging break: " + blockHangingBreak);
+        getLogger().info("Block vehicle place/break: " + blockVehiclePlaceBreak);
+        getLogger().info("Block projectile use: " + blockProjectileUse);
+        getLogger().info("Allow Elytra firework boost: " + allowElytraFireworkBoost);
+        getLogger().info("Block lead use: " + blockLeadUse);
+        getLogger().info("Block name tag use: " + blockNameTagUse);
         getLogger().info("Read-only interactions: " + blockReadonlyInteractions);
-        getLogger().info("Readonly blocks auto: " + readonlyBlocksAuto);
-        getLogger().info("Readonly entities auto: " + readonlyEntitiesAuto);
         getLogger().info("==================================================");
     }
 
@@ -204,19 +234,19 @@ public final class MuseumWorld extends JavaPlugin {
         YamlConfiguration defaultConfig = loadDefaultYamlFromJar("config.yml");
 
         if (defaultConfig == null) {
-            getLogger().warning("Could not load default config.yml from plugin jar. Missing key update skipped.");
+            getLogger().warning("Could not load default config.yml from plugin jar. Config template update skipped.");
             return;
         }
 
-        int defaultVersion = defaultConfig.getInt("config-version", 1);
+        String defaultTemplate = loadDefaultConfigTextFromJar();
 
-        normalizeDuplicateTopLevelConfigVersionEntries(configFile, defaultVersion);
+        if (defaultTemplate == null || defaultTemplate.isBlank()) {
+            getLogger().warning("Could not load default config.yml text from plugin jar. Config template update skipped.");
+            return;
+        }
 
         YamlConfiguration existingConfig = YamlConfiguration.loadConfiguration(configFile);
-
         Set<String> protectedConfigKeys = loadProtectedConfigKeys(existingConfig, defaultConfig);
-
-        boolean changed = copyMissingKeys(defaultConfig, existingConfig, protectedConfigKeys);
 
         boolean updateListsOnNextReload = existingConfig.getBoolean(
                 "update-lists-on-next-reload",
@@ -227,7 +257,6 @@ public final class MuseumWorld extends JavaPlugin {
             boolean listsChanged = copyMissingListValues(defaultConfig, existingConfig, protectedConfigKeys);
 
             existingConfig.set("update-lists-on-next-reload", false);
-            changed = true;
 
             if (listsChanged) {
                 getLogger().info("Config lists updated with missing default values.");
@@ -236,97 +265,437 @@ public final class MuseumWorld extends JavaPlugin {
             }
         }
 
-        int existingVersion = existingConfig.getInt("config-version", 1);
+        /*
+         * During DEV builds we keep config-version at the value from the default
+         * config.yml bundled in the plugin jar.
+         *
+         * For the current 1.0.x DEV cycle this remains config-version: 7.
+         */
+        int defaultVersion = defaultConfig.getInt("config-version", 7);
+        existingConfig.set("config-version", defaultVersion);
 
-        if (existingVersion < defaultVersion) {
-            existingConfig.set("config-version", defaultVersion);
-            changed = true;
+        String rewrittenConfig = rewriteConfigUsingDefaultTemplate(defaultTemplate, existingConfig, defaultConfig);
+        String currentConfigText = readTextFile(configFile);
+
+        if (normalizeLineEndings(currentConfigText).equals(normalizeLineEndings(rewrittenConfig))) {
+            return;
         }
 
-        if (changed) {
-            if (existingConfig.getBoolean(
-                    "backup-config-before-auto-update",
-                    defaultConfig.getBoolean("backup-config-before-auto-update", true)
-            )) {
-                int maxBackups = existingConfig.getInt(
-                        "max-config-backups",
-                        defaultConfig.getInt("max-config-backups", 10)
-                );
+        if (existingConfig.getBoolean(
+                "backup-config-before-auto-update",
+                defaultConfig.getBoolean("backup-config-before-auto-update", true)
+        )) {
+            int maxBackups = existingConfig.getInt(
+                    "max-config-backups",
+                    defaultConfig.getInt("max-config-backups", 10)
+            );
 
-                backupConfigFile(configFile, maxBackups);
-            }
+            backupConfigFile(configFile, maxBackups);
+        }
 
-            try {
-                existingConfig.save(configFile);
-                getLogger().info("config.yml updated. Config version: " + Math.max(existingVersion, defaultVersion));
-            } catch (Exception ex) {
-                getLogger().severe("Could not save updated config.yml: " + ex.getMessage());
-            }
+        try {
+            Files.writeString(configFile.toPath(), rewrittenConfig, StandardCharsets.UTF_8);
+            getLogger().info("config.yml updated from reference template. Config version: " + defaultVersion);
+        } catch (Exception ex) {
+            getLogger().severe("Could not save template-updated config.yml: " + ex.getMessage());
         }
     }
 
-    private void normalizeDuplicateTopLevelConfigVersionEntries(File configFile, int fallbackVersion) {
-        if (configFile == null || !configFile.exists()) {
-            return;
-        }
+    private String loadDefaultConfigTextFromJar() {
+        try (InputStream stream = getResource("config.yml")) {
+            if (stream == null) {
+                return null;
+            }
 
-        List<String> lines;
+            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            getLogger().warning("Could not read default config.yml text from plugin jar: " + ex.getMessage());
+            return null;
+        }
+    }
+
+    private String readTextFile(File file) {
+        if (file == null || !file.exists()) {
+            return "";
+        }
 
         try {
-            lines = Files.readAllLines(configFile.toPath(), StandardCharsets.UTF_8);
+            return Files.readString(file.toPath(), StandardCharsets.UTF_8);
         } catch (Exception ex) {
-            getLogger().warning("Could not scan config.yml for duplicate config-version entries: " + ex.getMessage());
-            return;
+            getLogger().warning("Could not read existing config.yml text: " + ex.getMessage());
+            return "";
+        }
+    }
+
+    private String normalizeLineEndings(String text) {
+        if (text == null) {
+            return "";
         }
 
-        List<Integer> configVersionLineIndexes = new ArrayList<>();
+        return text.replace("\r\n", "\n").replace("\r", "\n").trim();
+    }
 
-        for (int i = 0; i < lines.size(); i++) {
+    private String rewriteConfigUsingDefaultTemplate(
+            String defaultTemplate,
+            YamlConfiguration existingConfig,
+            YamlConfiguration defaultConfig
+    ) {
+        List<String> templateLines = new ArrayList<>(Arrays.asList(defaultTemplate.split("\\R", -1)));
+        List<String> outputLines = new ArrayList<>();
+
+        String currentTopLevelSection = null;
+
+        for (int i = 0; i < templateLines.size(); i++) {
+            String line = templateLines.get(i);
+
+            if (isConfigVersionLine(line)) {
+                continue;
+            }
+
+            String topLevelKey = getTopLevelKey(line);
+
+            if (topLevelKey != null) {
+                currentTopLevelSection = null;
+
+                if (isListPath(topLevelKey, existingConfig, defaultConfig)) {
+                    List<String> listBlock = collectIndentedBlock(templateLines, i);
+                    outputLines.addAll(renderListBlock(topLevelKey, listBlock, existingConfig, defaultConfig));
+                    i += listBlock.size();
+                    continue;
+                }
+
+                if (isSectionPath(topLevelKey, existingConfig, defaultConfig)) {
+                    currentTopLevelSection = topLevelKey;
+                    outputLines.add(line);
+                    continue;
+                }
+
+                if (isScalarPath(topLevelKey, existingConfig, defaultConfig)) {
+                    outputLines.add(renderScalarLine(line, topLevelKey, existingConfig, defaultConfig));
+                    continue;
+                }
+            }
+
+            String nestedKey = getNestedKey(line);
+
+            if (nestedKey != null && currentTopLevelSection != null) {
+                String fullPath = currentTopLevelSection + "." + nestedKey;
+
+                if (isScalarPath(fullPath, existingConfig, defaultConfig)) {
+                    outputLines.add(renderScalarLine(line, fullPath, existingConfig, defaultConfig));
+                    continue;
+                }
+            }
+
+            if (isNewTopLevelCommentOrBlank(line)) {
+                currentTopLevelSection = null;
+            }
+
+            outputLines.add(line);
+        }
+
+        removeTrailingBlankLines(outputLines);
+
+        int configVersion = existingConfig.getInt(
+                "config-version",
+                defaultConfig.getInt("config-version", 7)
+        );
+
+        outputLines.add("");
+        outputLines.add("config-version: " + configVersion);
+
+        return String.join(System.lineSeparator(), outputLines) + System.lineSeparator();
+    }
+
+    private boolean isConfigVersionLine(String line) {
+        if (line == null) {
+            return false;
+        }
+
+        String trimmed = line.trim();
+
+        if (trimmed.startsWith("#")) {
+            return false;
+        }
+
+        return !line.startsWith(" ")
+                && !line.startsWith("\t")
+                && trimmed.matches("^config-version\\s*:.*$");
+    }
+
+    private String getTopLevelKey(String line) {
+        if (line == null || line.isBlank()) {
+            return null;
+        }
+
+        if (line.startsWith(" ") || line.startsWith("\t")) {
+            return null;
+        }
+
+        String trimmed = line.trim();
+
+        if (trimmed.startsWith("#")) {
+            return null;
+        }
+
+        int colonIndex = trimmed.indexOf(':');
+
+        if (colonIndex <= 0) {
+            return null;
+        }
+
+        return trimmed.substring(0, colonIndex).trim();
+    }
+
+    private String getNestedKey(String line) {
+        if (line == null || line.isBlank()) {
+            return null;
+        }
+
+        if (!line.startsWith("  ") || line.startsWith("    ")) {
+            return null;
+        }
+
+        String trimmed = line.trim();
+
+        if (trimmed.startsWith("#") || trimmed.startsWith("-")) {
+            return null;
+        }
+
+        int colonIndex = trimmed.indexOf(':');
+
+        if (colonIndex <= 0) {
+            return null;
+        }
+
+        return trimmed.substring(0, colonIndex).trim();
+    }
+
+    private boolean isNewTopLevelCommentOrBlank(String line) {
+        if (line == null || line.isBlank()) {
+            return true;
+        }
+
+        return !line.startsWith(" ") && !line.startsWith("\t") && line.trim().startsWith("#");
+    }
+
+    private boolean isListPath(String path, YamlConfiguration existingConfig, YamlConfiguration defaultConfig) {
+        return existingConfig.isList(path) || defaultConfig.isList(path);
+    }
+
+    private boolean isSectionPath(String path, YamlConfiguration existingConfig, YamlConfiguration defaultConfig) {
+        return existingConfig.isConfigurationSection(path) || defaultConfig.isConfigurationSection(path);
+    }
+
+    private boolean isScalarPath(String path, YamlConfiguration existingConfig, YamlConfiguration defaultConfig) {
+        if (isListPath(path, existingConfig, defaultConfig)) {
+            return false;
+        }
+
+        if (isSectionPath(path, existingConfig, defaultConfig)) {
+            return false;
+        }
+
+        return existingConfig.contains(path) || defaultConfig.contains(path);
+    }
+
+    private List<String> collectIndentedBlock(List<String> lines, int keyLineIndex) {
+        List<String> block = new ArrayList<>();
+
+        for (int i = keyLineIndex + 1; i < lines.size(); i++) {
             String line = lines.get(i);
-            String trimmed = line.trim();
 
-            if (trimmed.startsWith("#")) {
+            if (!line.isBlank() && !line.startsWith(" ") && !line.startsWith("\t")) {
+                break;
+            }
+
+            block.add(line);
+        }
+
+        return block;
+    }
+
+    private List<String> renderListBlock(
+            String path,
+            List<String> templateBlock,
+            YamlConfiguration existingConfig,
+            YamlConfiguration defaultConfig
+    ) {
+        List<String> result = new ArrayList<>();
+
+        List<String> existingValues = getStringListPreservingValues(existingConfig, defaultConfig, path);
+        List<String> defaultValues = defaultConfig.getStringList(path);
+
+        if (existingValues.isEmpty()) {
+            result.add(path + ": []");
+            return result;
+        }
+
+        result.add(path + ":");
+
+        Set<String> existingUpper = new LinkedHashSet<>();
+        for (String value : existingValues) {
+            existingUpper.add(value.toUpperCase(Locale.ROOT));
+        }
+
+        Set<String> renderedUpper = new LinkedHashSet<>();
+        Set<String> defaultUpper = new LinkedHashSet<>();
+
+        for (String value : defaultValues) {
+            defaultUpper.add(value.toUpperCase(Locale.ROOT));
+        }
+
+        boolean renderedAnyDefaultItem = false;
+
+        for (String blockLine : templateBlock) {
+            String trimmed = blockLine.trim();
+
+            if (trimmed.startsWith("- ")) {
+                String itemValue = trimmed.substring(2).trim();
+                String itemUpper = itemValue.toUpperCase(Locale.ROOT);
+
+                if (existingUpper.contains(itemUpper)) {
+                    result.add(blockLine);
+                    renderedUpper.add(itemUpper);
+                    renderedAnyDefaultItem = true;
+                }
+
                 continue;
             }
 
-            boolean isTopLevel = !line.startsWith(" ") && !line.startsWith("\t");
+            /*
+             * Keep comments and blank lines from the reference config.
+             * This preserves the explanation/category structure.
+             */
+            result.add(blockLine);
+        }
 
-            if (isTopLevel && trimmed.matches("^config-version\\s*:.*$")) {
-                configVersionLineIndexes.add(i);
+        List<String> customValues = new ArrayList<>();
+
+        for (String value : existingValues) {
+            String valueUpper = value.toUpperCase(Locale.ROOT);
+
+            if (!renderedUpper.contains(valueUpper) && !defaultUpper.contains(valueUpper)) {
+                customValues.add(value);
             }
         }
 
-        if (configVersionLineIndexes.size() <= 1) {
-            return;
-        }
-
-        int lastIndex = configVersionLineIndexes.getLast();
-        String lastLine = lines.get(lastIndex);
-        String lastValue = lastLine.substring(lastLine.indexOf(':') + 1).trim();
-
-        if (lastValue.isBlank()) {
-            lastValue = String.valueOf(fallbackVersion);
-        }
-
-        List<String> cleanedLines = new ArrayList<>();
-
-        for (int i = 0; i < lines.size(); i++) {
-            if (configVersionLineIndexes.contains(i) && i != lastIndex) {
-                continue;
+        if (!customValues.isEmpty()) {
+            if (renderedAnyDefaultItem) {
+                result.add("");
             }
 
-            if (i == lastIndex) {
-                cleanedLines.add("config-version: " + lastValue);
-            } else {
-                cleanedLines.add(lines.get(i));
+            result.add("  # Custom values preserved from existing config.yml");
+            for (String customValue : customValues) {
+                result.add("  - " + customValue);
             }
         }
 
-        try {
-            Files.write(configFile.toPath(), cleanedLines, StandardCharsets.UTF_8);
-            getLogger().warning("Duplicate config-version entries found in config.yml. Kept only the last value: " + lastValue);
-        } catch (Exception ex) {
-            getLogger().warning("Could not clean duplicate config-version entries: " + ex.getMessage());
+        removeTrailingBlankLines(result);
+
+        return result;
+    }
+
+    private List<String> getStringListPreservingValues(
+            YamlConfiguration existingConfig,
+            YamlConfiguration defaultConfig,
+            String path
+    ) {
+        List<String> values = new ArrayList<>();
+
+        if (existingConfig.isList(path)) {
+            List<?> existingList = existingConfig.getList(path);
+
+            if (existingList == null) {
+                return values;
+            }
+
+            for (Object rawValue : existingList) {
+                if (rawValue == null) {
+                    continue;
+                }
+
+                String value = String.valueOf(rawValue).trim();
+
+                if (!value.isBlank()) {
+                    values.add(value);
+                }
+            }
+
+            return values;
+        }
+
+        if (defaultConfig.isList(path)) {
+            values.addAll(defaultConfig.getStringList(path));
+        }
+
+        return values;
+    }
+
+    private String renderScalarLine(
+            String originalLine,
+            String path,
+            YamlConfiguration existingConfig,
+            YamlConfiguration defaultConfig
+    ) {
+        Object value;
+
+        if (existingConfig.contains(path)) {
+            value = existingConfig.get(path);
+        } else {
+            value = defaultConfig.get(path);
+        }
+
+        String keyName = path.contains(".")
+                ? path.substring(path.lastIndexOf('.') + 1)
+                : path;
+
+        String indent = getLeadingWhitespace(originalLine);
+
+        return indent + keyName + ": " + formatYamlScalar(value);
+    }
+
+    private String getLeadingWhitespace(String line) {
+        if (line == null || line.isEmpty()) {
+            return "";
+        }
+
+        int index = 0;
+
+        while (index < line.length() && Character.isWhitespace(line.charAt(index))) {
+            index++;
+        }
+
+        return line.substring(0, index);
+    }
+
+    private String formatYamlScalar(Object value) {
+        if (value == null) {
+            return "null";
+        }
+
+        if (value instanceof Boolean || value instanceof Number) {
+            return String.valueOf(value);
+        }
+
+        String stringValue = String.valueOf(value);
+
+        if (stringValue.isBlank()) {
+            return "\"\"";
+        }
+
+        if (stringValue.matches("^[A-Za-z0-9_./:+\\-]+$")) {
+            return stringValue;
+        }
+
+        return "\"" + stringValue
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"") + "\"";
+    }
+
+    private void removeTrailingBlankLines(List<String> lines) {
+        while (!lines.isEmpty() && lines.getLast().isBlank()) {
+            lines.removeLast();
         }
     }
 
@@ -882,6 +1251,23 @@ public final class MuseumWorld extends JavaPlugin {
 
         blockEntityDamage = getConfig().getBoolean("block-entity-damage", true);
         blockFriendlyDamage = getConfig().getBoolean("block-friendly-damage", true);
+        blockItemDrop = getConfig().getBoolean("block-item-drop", true);
+        blockItemPickup = getConfig().getBoolean("block-item-pickup", true);
+        blockBucketUse = getConfig().getBoolean("block-bucket-use", true);
+        blockFireUse = getConfig().getBoolean("block-fire-use", true);
+        blockNaturalGrowth = getConfig().getBoolean("block-natural-growth", false);
+        blockBoneMealUse = getConfig().getBoolean("block-bone-meal-use", true);
+        blockPortalCreation = getConfig().getBoolean("block-portal-creation", true);
+        blockItemFrameRotation = getConfig().getBoolean("block-item-frame-rotation", true);
+        blockArmorStandManipulation = getConfig().getBoolean("block-armor-stand-manipulation", true);
+        blockTntIgnite = getConfig().getBoolean("block-tnt-ignite", true);
+        blockPlayerBedUse = getConfig().getBoolean("block-player-bed-use", true);
+        blockHangingBreak = getConfig().getBoolean("block-hanging-break", true);
+        blockVehiclePlaceBreak = getConfig().getBoolean("block-vehicle-place-break", true);
+        blockProjectileUse = getConfig().getBoolean("block-projectile-use", true);
+        allowElytraFireworkBoost = getConfig().getBoolean("allow-elytra-firework-boost", true);
+        blockLeadUse = getConfig().getBoolean("block-lead-use", true);
+        blockNameTagUse = getConfig().getBoolean("block-name-tag-use", true);
 
         blockedEntityTypes.clear();
         for (String s : getConfig().getStringList("blocked-entity-types")) {
@@ -898,7 +1284,6 @@ public final class MuseumWorld extends JavaPlugin {
 
         blockReadonlyInteractions = getConfig().getBoolean("block-readonly-interactions", true);
 
-        readonlyBlocksAuto = getConfig().getBoolean("readonly-blocks-auto", true);
         readonlyBlocks.clear();
         for (String s : getConfig().getStringList("readonly-blocks")) {
             if (s == null || s.isBlank()) {
@@ -925,7 +1310,6 @@ public final class MuseumWorld extends JavaPlugin {
             }
         }
 
-        readonlyEntitiesAuto = getConfig().getBoolean("readonly-entities-auto", true);
         readonlyEntities.clear();
         for (String s : getConfig().getStringList("readonly-entities")) {
             if (s == null || s.isBlank()) {
@@ -1010,6 +1394,74 @@ public final class MuseumWorld extends JavaPlugin {
         return blockFriendlyDamage;
     }
 
+    public boolean blockItemDrop() {
+        return blockItemDrop;
+    }
+
+    public boolean blockItemPickup() {
+        return blockItemPickup;
+    }
+
+    public boolean blockBucketUse() {
+        return blockBucketUse;
+    }
+
+    public boolean blockFireUse() {
+        return blockFireUse;
+    }
+
+    public boolean blockNaturalGrowth() {
+        return blockNaturalGrowth;
+    }
+
+    public boolean blockBoneMealUse() {
+        return blockBoneMealUse;
+    }
+
+    public boolean blockPortalCreation() {
+        return blockPortalCreation;
+    }
+
+    public boolean blockItemFrameRotation() {
+        return blockItemFrameRotation;
+    }
+
+    public boolean blockArmorStandManipulation() {
+        return blockArmorStandManipulation;
+    }
+
+    public boolean blockTntIgnite() {
+        return blockTntIgnite;
+    }
+
+    public boolean blockPlayerBedUse() {
+        return blockPlayerBedUse;
+    }
+
+    public boolean blockHangingBreak() {
+        return blockHangingBreak;
+    }
+
+    public boolean blockVehiclePlaceBreak() {
+        return blockVehiclePlaceBreak;
+    }
+
+    public boolean blockProjectileUse() {
+        return blockProjectileUse;
+    }
+
+    public boolean allowElytraFireworkBoost() {
+        return allowElytraFireworkBoost;
+    }
+
+    public boolean blockLeadUse() {
+        return blockLeadUse;
+    }
+
+    public boolean blockNameTagUse() {
+        return blockNameTagUse;
+    }
+
     public Set<EntityType> blockedEntityTypes() {
         return blockedEntityTypes;
     }
@@ -1018,20 +1470,12 @@ public final class MuseumWorld extends JavaPlugin {
         return blockReadonlyInteractions;
     }
 
-    public boolean readonlyBlocksAuto() {
-        return readonlyBlocksAuto;
-    }
-
     public Set<Material> readonlyBlocks() {
         return readonlyBlocks;
     }
 
     public Set<Material> viewOnlyContainers() {
         return viewOnlyContainers;
-    }
-
-    public boolean readonlyEntitiesAuto() {
-        return readonlyEntitiesAuto;
     }
 
     public Set<EntityType> readonlyEntities() {
