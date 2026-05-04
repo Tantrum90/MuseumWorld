@@ -1,17 +1,16 @@
-# MuseumWorld  by  Tantrum90
+# MuseumWorld by Tantrum90
 
-  <a href="https://github.com/Tantrum90/MuseumWorld">
-    <img alt="GitHub" src="https://img.shields.io/badge/GitHub-MuseumWorld-181717?style=for-the-badge&logo=github">
-  </a>
+<a href="https://github.com/Tantrum90/MuseumWorld">
+  <img alt="GitHub" src="https://img.shields.io/badge/GitHub-MuseumWorld-181717?style=for-the-badge&logo=github">
+</a>
 
-  <a href="https://hangar.papermc.io/Tantrum90/MuseumWorld">
-    <img alt="Hangar" src="https://img.shields.io/badge/Hangar-MuseumWorld-blue?style=for-the-badge">
-  </a>
+<a href="https://hangar.papermc.io/Tantrum90/MuseumWorld">
+  <img alt="Hangar" src="https://img.shields.io/badge/Hangar-MuseumWorld-blue?style=for-the-badge">
+</a>
 
-  <a href="https://modrinth.com/plugin/museumworld">
-    <img alt="Modrinth" src="https://img.shields.io/badge/Modrinth-MuseumWorld-00AF5C?style=for-the-badge&logo=modrinth">
-  </a>
-
+<a href="https://modrinth.com/plugin/museumworld">
+  <img alt="Modrinth" src="https://img.shields.io/badge/Modrinth-MuseumWorld-00AF5C?style=for-the-badge&logo=modrinth">
+</a>
 
 MuseumWorld is a lightweight Paper plugin that turns selected worlds into **read-only “museum / showcase” worlds**.
 
@@ -45,6 +44,21 @@ In protected worlds, MuseumWorld can block:
 - protected container modification
 - hopper/item transfer involving protected inventories
 - explosions damaging blocks
+- item dropping
+- item pickup
+- bucket fill/empty actions
+- flint and steel / fire charge use
+- fire ignition
+- TNT ignition
+- bed use
+- bone meal use
+- Nether portal creation
+- natural growth, spread and decay changes
+- projectile use, with optional Elytra firework boost exception
+- lead use
+- name tag use
+- vehicle placement and breaking
+- hanging entity breaking/removal
 
 ---
 
@@ -75,18 +89,118 @@ But they cannot:
 
 ---
 
-### ✅ Config-driven
+### ✅ Strictly config-driven protection
 
-Most important behavior is controlled in `config.yml`, including:
+MuseumWorld is designed to be predictable and controlled through `config.yml`.
 
-- locked worlds
-- read-only blocks
-- read-only entities
-- entity damage protection
-- message language
-- message cooldown
-- debug mode
-- config auto-update behavior
+Read-only blocks and read-only entities are protected **only if they are explicitly listed** in:
+
+```yml
+readonly-blocks:
+readonly-entities:
+```
+
+There is no automatic read-only block/entity detection.
+
+This means navigation blocks such as doors, trapdoors and fence gates are not blocked unless the server owner explicitly adds them to `readonly-blocks`.
+
+For example, if players should be able to open doors in a museum world, simply do not add those doors to `readonly-blocks`.
+
+If a specific door should be locked, add it manually:
+
+```yml
+readonly-blocks:
+  - OAK_DOOR
+  - IRON_DOOR
+```
+
+This keeps the plugin fully configurable and avoids unexpected protection behavior.
+
+---
+
+### ✅ Extended protection toggles
+
+MuseumWorld includes additional protection options for common grief-prevention and museum-world use cases.
+
+Example:
+
+```yml
+block-item-drop: true
+block-item-pickup: true
+block-bucket-use: true
+block-fire-use: true
+block-natural-growth: false
+block-bone-meal-use: true
+block-portal-creation: true
+block-item-frame-rotation: true
+block-armor-stand-manipulation: true
+block-tnt-ignite: true
+block-player-bed-use: true
+block-hanging-break: true
+block-vehicle-place-break: true
+block-projectile-use: true
+block-lead-use: true
+block-name-tag-use: true
+```
+
+These options allow server owners to decide exactly how strict each protected world should be.
+
+---
+
+### ✅ Elytra support
+
+Projectile blocking can be enabled while still allowing Elytra firework boosting.
+
+```yml
+block-projectile-use: true
+allow-elytra-firework-boost: true
+```
+
+When enabled, players can still use firework rockets while gliding with Elytra.
+
+This allows Elytra flight in protected worlds while still blocking other projectile-style interactions such as eggs, ender pearls, splash potions and similar actions.
+
+---
+
+### ✅ Config validation and safe cleanup
+
+MuseumWorld can validate selected config lists on startup.
+
+The validator checks:
+
+```yml
+readonly-blocks
+view-only-containers
+readonly-entities
+blocked-entity-types
+```
+
+If invalid `Material` or `EntityType` names are found, MuseumWorld can automatically remove them when enabled:
+
+```yml
+auto-clean-invalid-config-values: true
+```
+
+Before cleanup, the plugin can create a backup of `config.yml`.
+
+Validation reports are saved under:
+
+```text
+plugins/MuseumWorld/logs/
+```
+
+Config backups are saved under:
+
+```text
+plugins/MuseumWorld/backups/
+```
+
+The validator does **not** modify:
+
+```yml
+locked-worlds
+language
+```
 
 ---
 
@@ -129,6 +243,27 @@ Backups are stored in:
 ```text
 plugins/MuseumWorld/backups/
 ```
+
+---
+
+### ✅ Template-based config rewrite
+
+MuseumWorld rewrites `config.yml` using the bundled default configuration as a template.
+
+This means automatic config updates preserve:
+
+- official comments
+- key order
+- newly added explanations
+- existing user-defined values
+- custom list entries
+- a clean and predictable config layout
+
+The bundled default `config.yml` acts as the reference layout.
+
+The active server `config.yml` keeps user values, while missing keys and comments are restored from the default template.
+
+`config-version` is always kept as the final key at the bottom of the file.
 
 ---
 
@@ -183,7 +318,7 @@ Reloads config and message files.
 /museum status
 ```
 
-Shows plugin status, current world protection status, player permissions, gamemode diagnostics, and config counts.
+Shows plugin status, current world protection status, player permissions, gamemode diagnostics, config counts and protection toggle states.
 
 ```text
 /museum debug on
@@ -257,6 +392,18 @@ Example allowed output:
 [MuseumWorld] [DEBUG] ALLOWED block-break | player=PlayerName | world=WorldName | locked=true | bypass=true | reason=player has bypass/admin permission
 ```
 
+Debug mode is useful when testing:
+
+- protected worlds
+- bypass permissions
+- read-only blocks
+- read-only entities
+- inventory protection
+- projectile blocking
+- Elytra firework boost behavior
+- bucket/fire/TNT protections
+- vehicle and hanging entity protections
+
 ---
 
 ## Gamemode-aware diagnostics
@@ -288,6 +435,7 @@ to check:
 - `museumworld.admin` permission
 - `museumworld.bypass` permission
 - whether block breaking is expected to work in the current gamemode
+- important protection toggle states
 
 ---
 
@@ -327,7 +475,46 @@ gamemode: ADVENTURE
 hunger: false
 ```
 
-This allows players to explore without breaking blocks or losing hunger. You can still kill un-friendly mobs.
+This allows players to explore without breaking blocks or losing hunger.
+
+MuseumWorld can then provide additional protection against interactions that Adventure mode does not fully cover, such as:
+
+- inventory movement
+- container modification
+- item dropping and pickup
+- bucket use
+- fire use
+- TNT ignition
+- entity manipulation
+- projectile use
+- item frame and armor stand interaction
+- vehicle placement/removal
+
+---
+
+## Notes about doors, trapdoors and gates
+
+MuseumWorld does not automatically block doors, trapdoors or fence gates.
+
+They are normal navigation blocks in many museum/showcase worlds.
+
+If you want to lock a specific door, trapdoor or fence gate type, add it manually to:
+
+```yml
+readonly-blocks:
+```
+
+Example:
+
+```yml
+readonly-blocks:
+  - OAK_DOOR
+  - IRON_DOOR
+  - OAK_TRAPDOOR
+  - OAK_FENCE_GATE
+```
+
+If they are not listed, players can use them normally.
 
 ---
 
