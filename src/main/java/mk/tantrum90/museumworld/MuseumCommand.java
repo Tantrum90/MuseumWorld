@@ -203,6 +203,13 @@ public final class MuseumCommand implements BasicCommand {
         sender.sendMessage("§eBlock name tag use: " + formatBoolean(plugin.blockNameTagUse()));
         sender.sendMessage("§eRead-only interactions: " + formatBoolean(plugin.blockReadonlyInteractions()));
         sender.sendMessage("§eUpdate lists on next reload: " + formatBoolean(plugin.getConfig().getBoolean("update-lists-on-next-reload", false)));
+        sender.sendMessage("§eUpdate checker enabled: " + formatBoolean(plugin.updateCheckerEnabled()));
+        sender.sendMessage("§eNotify admins about updates: " + formatBoolean(plugin.notifyAdminsAboutUpdates()));
+        sender.sendMessage("§eUpdate available: " + formatBoolean(plugin.updateAvailable()));
+
+        if (plugin.updateAvailable()) {
+            sender.sendMessage("§eLatest version: §f" + plugin.latestVersion());
+        }
 
         sender.sendMessage("§eLocked worlds: §f" + lockedWorlds.size());
         sender.sendMessage("§eReadonly blocks: §f" + plugin.readonlyBlocks().size());

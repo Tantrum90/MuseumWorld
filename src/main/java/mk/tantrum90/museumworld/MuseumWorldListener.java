@@ -39,6 +39,7 @@ import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
@@ -54,6 +55,36 @@ public final class MuseumWorldListener implements Listener {
 
     public MuseumWorldListener(MuseumWorld plugin) {
         this.plugin = plugin;
+    }
+
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+
+        if (!plugin.notifyAdminsAboutUpdates()) {
+            return;
+        }
+
+        if (!plugin.updateAvailable()) {
+            return;
+        }
+
+        if (!player.hasPermission("museumworld.admin")) {
+            return;
+        }
+
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline() || !plugin.updateAvailable()) {
+                return;
+            }
+
+            player.sendMessage("§6MuseumWorld update available: §e" + plugin.latestVersion());
+
+            if (!plugin.latestVersionUrl().isBlank()) {
+                player.sendMessage("§7Download: §f" + plugin.latestVersionUrl());
+            }
+        }, 40L);
     }
 
     private boolean isLocked(World world) {

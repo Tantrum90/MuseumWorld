@@ -38,7 +38,6 @@ In protected worlds, MuseumWorld can block:
 - block placing
 - inventory modification
 - entity damage
-- friendly mob damage
 - armor stand manipulation
 - item frame / painting interaction
 - protected container modification
@@ -267,6 +266,23 @@ The active server `config.yml` keeps user values, while missing keys and comment
 
 ---
 
+### ✅ bStats metrics
+
+MuseumWorld uses anonymous bStats metrics.
+
+bStats helps track how many servers use the plugin and which server/software versions are common. It does not collect private player data, chat, world names or config values.
+
+### ✅ Update checker
+
+MuseumWorld can check GitHub Releases for new plugin versions on startup.
+
+```yml
+update-checker-enabled: true
+notify-admins-about-updates: true
+```
+
+The update checker only notifies server owners/admins. It never downloads or installs updates automatically.
+
 ## Commands
 
 Main command:
@@ -301,8 +317,8 @@ Example output:
 
 ```text
 MuseumWorld
-Version: 1.0.4-DEV
-Channel: DEVELOPMENT
+Version: 1.1.0
+Channel: STABLE
 Target API: Paper 26.1.2
 Author: Tantrum90MK
 ```

@@ -142,7 +142,6 @@ blocked-entity-types:
   - ZOMBIE_HORSE
   - CREAKING
   - GIANT
-  - TADPOLE
 
 
 # Block interactions with "read-only" blocks/entities (see lists below).
@@ -502,6 +501,14 @@ view-only-containers:
   - GREEN_SHULKER_BOX
   - RED_SHULKER_BOX
   - BLACK_SHULKER_BOX
+
+# MuseumWorld uses bStats for anonymous usage statistics.
+
+# The update checker only prints a notification. It never downloads or installs updates automatically.
+update-checker-enabled: true
+
+# If true, online admins will be notified when a newer version is detected.
+notify-admins-about-updates: true
 
 # These keys are protected during automatic config updates.
 # The plugin will not overwrite them from the default config.

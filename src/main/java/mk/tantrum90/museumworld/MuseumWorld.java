@@ -8,10 +8,15 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bstats.bukkit.Metrics;
 
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -19,8 +24,14 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class MuseumWorld extends JavaPlugin {
+
+    private static final int BSTATS_PLUGIN_ID = 31236;
+    private static final String UPDATE_CHECKER_URL =
+            "https://api.github.com/repos/Tantrum90/MuseumWorld/releases/latest";
 
     private static final Set<String> DEFAULT_PROTECTED_CONFIG_KEYS = Set.of(
             "locked-worlds",
@@ -64,6 +75,12 @@ public final class MuseumWorld extends JavaPlugin {
     private String msgBlocked;
     private final Map<String, String> actionMessages = new HashMap<>();
 
+    private boolean updateCheckerEnabled;
+    private boolean notifyAdminsAboutUpdates;
+    private volatile boolean updateAvailable;
+    private volatile String latestVersion = "";
+    private volatile String latestVersionUrl = "";
+
     private final Map<UUID, Map<String, Long>> lastMessageByKey = new ConcurrentHashMap<>();
 
     @Override
@@ -85,6 +102,9 @@ public final class MuseumWorld extends JavaPlugin {
         if (getConfig().getBoolean("startup-summary-enabled", false)) {
             logStartupSummary();
         }
+
+        startMetrics();
+        checkForUpdatesAsync();
 
         getLogger().info("MuseumWorld enabled. Locked worlds: " + lockedWorlds);
     }
@@ -162,6 +182,8 @@ public final class MuseumWorld extends JavaPlugin {
         getLogger().info("Block lead use: " + blockLeadUse);
         getLogger().info("Block name tag use: " + blockNameTagUse);
         getLogger().info("Read-only interactions: " + blockReadonlyInteractions);
+        getLogger().info("Update checker enabled: " + updateCheckerEnabled);
+        getLogger().info("Notify admins about updates: " + notifyAdminsAboutUpdates);
         getLogger().info("==================================================");
     }
 
@@ -1411,6 +1433,180 @@ public final class MuseumWorld extends JavaPlugin {
         }
     }
 
+    private void startMetrics() {
+        try {
+            new Metrics(this, BSTATS_PLUGIN_ID);
+            getLogger().info("bStats metrics enabled.");
+        } catch (Exception ex) {
+            getLogger().warning("Could not start bStats metrics: " + ex.getMessage());
+        }
+    }
+
+    private void checkForUpdatesAsync() {
+        if (!updateCheckerEnabled) {
+            getLogger().info("Update checker is disabled in config.yml.");
+            return;
+        }
+
+        HttpRequest request;
+        try {
+            request = HttpRequest.newBuilder()
+                    .uri(URI.create(UPDATE_CHECKER_URL))
+                    .header("Accept", "application/json")
+                    .header("User-Agent", "MuseumWorld/" + getPluginMeta().getVersion())
+                    .GET()
+                    .build();
+        } catch (Exception ex) {
+            getLogger().warning("Could not create update checker request: " + ex.getMessage());
+            return;
+        }
+
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            try (HttpClient client = HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build()) {
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                handleUpdateResponse(response.statusCode(), response.body());
+            } catch (Exception ex) {
+                getLogger().warning("Could not check for MuseumWorld updates: " + ex.getMessage());
+            }
+        });
+    }
+
+    private void handleUpdateResponse(int statusCode, String body) {
+        if (statusCode < 200 || statusCode >= 300) {
+            getLogger().warning("Update checker returned HTTP " + statusCode + ".");
+            return;
+        }
+
+        Optional<UpdateInfo> updateInfo = parseUpdateInfo(body);
+
+        if (updateInfo.isEmpty()) {
+            getLogger().warning("Update checker could not find a version in the response.");
+            return;
+        }
+
+        UpdateInfo info = updateInfo.get();
+        String currentVersion = getPluginMeta().getVersion();
+        int comparison = compareVersions(info.version(), currentVersion);
+
+        if (comparison > 0) {
+            updateAvailable = true;
+            latestVersion = info.version();
+            latestVersionUrl = info.url();
+
+            getLogger().warning("A new MuseumWorld version is available: " + latestVersion + " (current: " + currentVersion + ")");
+            if (!latestVersionUrl.isBlank()) {
+                getLogger().warning("Download: " + latestVersionUrl);
+            }
+            return;
+        }
+
+        updateAvailable = false;
+        latestVersion = info.version();
+        latestVersionUrl = info.url();
+        getLogger().info("MuseumWorld is up to date. Current: " + currentVersion + ", latest: " + info.version());
+    }
+
+    private Optional<UpdateInfo> parseUpdateInfo(String body) {
+        if (body == null || body.isBlank()) {
+            return Optional.empty();
+        }
+
+        String version = findJsonStringValue(body, "tag_name")
+                .orElseGet(() -> findJsonStringValue(body, "version_number")
+                        .orElseGet(() -> findJsonStringValue(body, "name").orElse("")));
+
+        if (version.isBlank()) {
+            return Optional.empty();
+        }
+
+        String url = findJsonStringValue(body, "html_url")
+                .orElseGet(() -> findJsonStringValue(body, "url").orElse(""));
+
+        return Optional.of(new UpdateInfo(version, url));
+    }
+
+    private Optional<String> findJsonStringValue(String json, String key) {
+        Pattern pattern = Pattern.compile("\\x22" + Pattern.quote(key) + "\\x22\\s*:\\s*\\x22([^\\x22]*)\\x22");
+        Matcher matcher = pattern.matcher(json);
+
+        if (!matcher.find()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(unescapeJsonString(matcher.group(1)));
+    }
+
+    private String unescapeJsonString(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        return value
+                .replace("\\\\", "\\")
+                .replace("\\\"", "\"")
+                .replace("\\/", "/")
+                .replace("\\n", "\n")
+                .replace("\\r", "\r")
+                .replace("\\t", "\t");
+    }
+
+    private int compareVersions(String latest, String current) {
+        List<Integer> latestParts = semanticVersionParts(latest);
+        List<Integer> currentParts = semanticVersionParts(current);
+        int max = Math.max(latestParts.size(), currentParts.size());
+
+        for (int i = 0; i < max; i++) {
+            int latestPart = i < latestParts.size() ? latestParts.get(i) : 0;
+            int currentPart = i < currentParts.size() ? currentParts.get(i) : 0;
+
+            if (latestPart != currentPart) {
+                return Integer.compare(latestPart, currentPart);
+            }
+        }
+
+        return 0;
+    }
+
+    private List<Integer> semanticVersionParts(String version) {
+        String normalized = normalizeVersion(version);
+        List<Integer> parts = new ArrayList<>();
+
+        for (String part : normalized.split("\\.")) {
+            if (part.isBlank()) {
+                continue;
+            }
+
+            try {
+                parts.add(Integer.parseInt(part));
+            } catch (NumberFormatException ignored) {
+                parts.add(0);
+            }
+        }
+
+        return parts;
+    }
+
+    private String normalizeVersion(String version) {
+        if (version == null) {
+            return "0";
+        }
+
+        String normalized = version.trim();
+
+        if (normalized.startsWith("v") || normalized.startsWith("V")) {
+            normalized = normalized.substring(1);
+        }
+
+        int dashIndex = normalized.indexOf('-');
+        if (dashIndex >= 0) {
+            normalized = normalized.substring(0, dashIndex);
+        }
+
+        return normalized.replaceAll("[^0-9.]", "");
+    }
+
     private void loadConfigState() {
         lockedWorlds.clear();
         for (String w : getConfig().getStringList("locked-worlds")) {
@@ -1443,6 +1639,9 @@ public final class MuseumWorld extends JavaPlugin {
         allowElytraFireworkBoost = getConfig().getBoolean("allow-elytra-firework-boost", true);
         blockLeadUse = getConfig().getBoolean("block-lead-use", true);
         blockNameTagUse = getConfig().getBoolean("block-name-tag-use", true);
+
+        updateCheckerEnabled = getConfig().getBoolean("update-checker-enabled", true);
+        notifyAdminsAboutUpdates = getConfig().getBoolean("notify-admins-about-updates", true);
 
         blockedEntityTypes.clear();
         for (String s : getConfig().getStringList("blocked-entity-types")) {
@@ -1717,6 +1916,29 @@ public final class MuseumWorld extends JavaPlugin {
         }
 
         return false;
+    }
+
+    public boolean updateCheckerEnabled() {
+        return updateCheckerEnabled;
+    }
+
+    public boolean notifyAdminsAboutUpdates() {
+        return notifyAdminsAboutUpdates;
+    }
+
+    public boolean updateAvailable() {
+        return updateAvailable;
+    }
+
+    public String latestVersion() {
+        return latestVersion == null ? "" : latestVersion;
+    }
+
+    public String latestVersionUrl() {
+        return latestVersionUrl == null ? "" : latestVersionUrl;
+    }
+
+    private record UpdateInfo(String version, String url) {
     }
 
     public List<String> getLockedWorlds() {
