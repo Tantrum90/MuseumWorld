@@ -2,6 +2,7 @@
 
 # Which worlds should be treated as read-only
 locked-worlds: []
+
 # Example:
 # locked-worlds:
 #   - overworld
@@ -19,19 +20,78 @@ language: en
 # Useful for testing why something is blocked or allowed.
 debug-mode: false
 
+# If true, MuseumWorld will print a startup summary when the plugin is enabled.
+startup-summary-enabled: false
+
 # Message throttling to prevent chat spam
 messages:
   # Minimum time (ms) between repeating the same message to the same player.
   # Some events (like repeated interactions) can otherwise spam chat.
   cooldown-ms: 2500
 
-# Block damaging ANY entities in locked worlds
+# If true, damage protection is applied only to entity types listed under blocked-entity-types.
+# Entity types not listed there can still be damaged in locked worlds.
 block-entity-damage: true
 
-# Legacy setting kept for compatibility: block damage to friendly/passive mobs
-block-friendly-damage: true
+# Block players from dropping items in locked worlds.
+block-item-drop: true
 
-# Additionally block damaging these entity types (even if block-entity-damage is false)
+# Block players from picking up dropped items in locked worlds.
+block-item-pickup: true
+
+# Block bucket fill/empty actions in locked worlds.
+block-bucket-use: true
+
+# Block flint and steel, fire charges, and fire ignition in locked worlds.
+block-fire-use: true
+
+# Block natural growth/spread/decay changes in locked worlds.
+# Recommended false by default because it can be more aggressive.
+block-natural-growth: false
+
+# Block bone meal use in locked worlds.
+block-bone-meal-use: true
+
+# Block Nether portal creation in locked worlds.
+block-portal-creation: true
+
+# Block item frame rotation in locked worlds.
+block-item-frame-rotation: true
+
+# Block armor stand manipulation in locked worlds.
+block-armor-stand-manipulation: true
+
+# Block TNT ignition in locked worlds.
+block-tnt-ignite: true
+
+# Block bed use in locked worlds.
+block-player-bed-use: true
+
+# Block breaking/removing paintings, item frames, leash knots and other hanging entities.
+block-hanging-break: true
+
+# Block placing/breaking boats, rafts, minecarts and similar vehicles in locked worlds.
+block-vehicle-place-break: true
+
+# Block players from entering boats, rafts, minecarts and other vehicles in locked worlds.
+# Useful when vehicles are used as decoration in museum/showcase worlds.
+block-vehicle-enter: false
+
+# Block throwing eggs, ender pearls, splash potions, arrows and similar projectiles/items
+# that can affect the world or entities.
+block-projectile-use: true
+
+# If true, firework rockets are still allowed for Elytra boosting
+# while the player is gliding with Elytra equipped.
+allow-elytra-firework-boost: true
+
+# Block placing/removing leads on entities and fences.
+block-lead-use: true
+
+# Block name tags on entities in locked worlds.
+block-name-tag-use: true
+
+# Entity types that cannot be damaged when block-entity-damage is true
 blocked-entity-types:
   - ALLAY
   - ARMADILLO
@@ -80,14 +140,18 @@ blocked-entity-types:
   - WANDERING_TRADER
   - WOLF
   - ZOMBIE_HORSE
+  - CREAKING
+  - GIANT
 
-# Block interactions with "read-only" blocks/entities (see lists below)
+
+# Block interactions with "read-only" blocks/entities (see lists below).
+# Note: block breaking is already blocked globally in locked worlds.
+# The lists below are for right-click/use/state-changing interactions, not for break protection.
 block-readonly-interactions: true
 
-# Automatically treat common containers/interactive blocks as read-only
-readonly-blocks-auto: true
-
-# Extra blocks to treat as read-only (Material names)
+# Extra blocks to treat as read-only (Material names).
+# MuseumWorld is strictly config-driven:
+# blocks are treated as read-only only if they are explicitly listed here.
 readonly-blocks:
   # Containers / storage
   - CHEST
@@ -99,6 +163,26 @@ readonly-blocks:
   - DROPPER
   - CHISELED_BOOKSHELF
   - DECORATED_POT
+
+  # Copper chests
+  - COPPER_CHEST
+  - EXPOSED_COPPER_CHEST
+  - WEATHERED_COPPER_CHEST
+  - OXIDIZED_COPPER_CHEST
+  - WAXED_COPPER_CHEST
+  - WAXED_EXPOSED_COPPER_CHEST
+  - WAXED_WEATHERED_COPPER_CHEST
+  - WAXED_OXIDIZED_COPPER_CHEST
+
+  # Cauldrons / pots / fragile display blocks
+  - CAULDRON
+  - WATER_CAULDRON
+  - LAVA_CAULDRON
+  - POWDER_SNOW_CAULDRON
+  - FLOWER_POT
+  - CAKE
+  - TURTLE_EGG
+  - DRAGON_EGG
 
   # Shulker boxes
   - SHULKER_BOX
@@ -172,14 +256,161 @@ readonly-blocks:
   - WAXED_WEATHERED_COPPER_BULB
   - WAXED_OXIDIZED_COPPER_BULB
 
-# Automatically treat common interactive entities as read-only
-readonly-entities-auto: true
+  # Copper golem statues / oxidation-sensitive display blocks
+  - COPPER_GOLEM_STATUE
+  - EXPOSED_COPPER_GOLEM_STATUE
+  - WEATHERED_COPPER_GOLEM_STATUE
+  - OXIDIZED_COPPER_GOLEM_STATUE
+  - WAXED_COPPER_GOLEM_STATUE
+  - WAXED_EXPOSED_COPPER_GOLEM_STATUE
+  - WAXED_WEATHERED_COPPER_GOLEM_STATUE
+  - WAXED_OXIDIZED_COPPER_GOLEM_STATUE
 
-# Extra entities to treat as read-only (EntityType names)
+  # Lightning rods / redstone-relevant oxidation-sensitive blocks
+  - LIGHTNING_ROD
+  - EXPOSED_LIGHTNING_ROD
+  - WEATHERED_LIGHTNING_ROD
+  - OXIDIZED_LIGHTNING_ROD
+  - WAXED_LIGHTNING_ROD
+  - WAXED_EXPOSED_LIGHTNING_ROD
+  - WAXED_WEATHERED_LIGHTNING_ROD
+  - WAXED_OXIDIZED_LIGHTNING_ROD
+
+  # Candles / fragile interactive display blocks
+  - CANDLE
+  - WHITE_CANDLE
+  - ORANGE_CANDLE
+  - MAGENTA_CANDLE
+  - LIGHT_BLUE_CANDLE
+  - YELLOW_CANDLE
+  - LIME_CANDLE
+  - PINK_CANDLE
+  - GRAY_CANDLE
+  - LIGHT_GRAY_CANDLE
+  - CYAN_CANDLE
+  - PURPLE_CANDLE
+  - BLUE_CANDLE
+  - BROWN_CANDLE
+  - GREEN_CANDLE
+  - RED_CANDLE
+  - BLACK_CANDLE
+
+  # Potted plants / flower pots with content
+  - POTTED_ACACIA_SAPLING
+  - POTTED_ALLIUM
+  - POTTED_AZALEA_BUSH
+  - POTTED_AZURE_BLUET
+  - POTTED_BAMBOO
+  - POTTED_BIRCH_SAPLING
+  - POTTED_BLUE_ORCHID
+  - POTTED_BROWN_MUSHROOM
+  - POTTED_CACTUS
+  - POTTED_CHERRY_SAPLING
+  - POTTED_CLOSED_EYEBLOSSOM
+  - POTTED_CORNFLOWER
+  - POTTED_CRIMSON_FUNGUS
+  - POTTED_CRIMSON_ROOTS
+  - POTTED_DANDELION
+  - POTTED_DARK_OAK_SAPLING
+  - POTTED_DEAD_BUSH
+  - POTTED_FERN
+  - POTTED_FLOWERING_AZALEA_BUSH
+  - POTTED_JUNGLE_SAPLING
+  - POTTED_LILY_OF_THE_VALLEY
+  - POTTED_MANGROVE_PROPAGULE
+  - POTTED_OAK_SAPLING
+  - POTTED_OPEN_EYEBLOSSOM
+  - POTTED_ORANGE_TULIP
+  - POTTED_OXEYE_DAISY
+  - POTTED_PALE_OAK_SAPLING
+  - POTTED_PINK_TULIP
+  - POTTED_POPPY
+  - POTTED_RED_MUSHROOM
+  - POTTED_RED_TULIP
+  - POTTED_SPRUCE_SAPLING
+  - POTTED_TORCHFLOWER
+  - POTTED_WARPED_FUNGUS
+  - POTTED_WARPED_ROOTS
+  - POTTED_WHITE_TULIP
+  - POTTED_WITHER_ROSE
+
+  # Doors / trapdoors / fence gates are NOT enabled by default.
+  # They are normal navigation blocks in many museum/showcase worlds.
+  # Add them manually if you want to lock navigation blocks too.
+
+  # Doors
+  # - OAK_DOOR
+  # - SPRUCE_DOOR
+  # - BIRCH_DOOR
+  # - JUNGLE_DOOR
+  # - ACACIA_DOOR
+  # - DARK_OAK_DOOR
+  # - MANGROVE_DOOR
+  # - CHERRY_DOOR
+  # - PALE_OAK_DOOR
+  # - BAMBOO_DOOR
+  # - CRIMSON_DOOR
+  # - WARPED_DOOR
+  # - IRON_DOOR
+  # - COPPER_DOOR
+  # - EXPOSED_COPPER_DOOR
+  # - WEATHERED_COPPER_DOOR
+  # - OXIDIZED_COPPER_DOOR
+  # - WAXED_COPPER_DOOR
+  # - WAXED_EXPOSED_COPPER_DOOR
+  # - WAXED_WEATHERED_COPPER_DOOR
+  # - WAXED_OXIDIZED_COPPER_DOOR
+
+  # Trapdoors
+  # - OAK_TRAPDOOR
+  # - SPRUCE_TRAPDOOR
+  # - BIRCH_TRAPDOOR
+  # - JUNGLE_TRAPDOOR
+  # - ACACIA_TRAPDOOR
+  # - DARK_OAK_TRAPDOOR
+  # - MANGROVE_TRAPDOOR
+  # - CHERRY_TRAPDOOR
+  # - PALE_OAK_TRAPDOOR
+  # - BAMBOO_TRAPDOOR
+  # - CRIMSON_TRAPDOOR
+  # - WARPED_TRAPDOOR
+  # - IRON_TRAPDOOR
+  # - COPPER_TRAPDOOR
+  # - EXPOSED_COPPER_TRAPDOOR
+  # - WEATHERED_COPPER_TRAPDOOR
+  # - OXIDIZED_COPPER_TRAPDOOR
+  # - WAXED_COPPER_TRAPDOOR
+  # - WAXED_EXPOSED_COPPER_TRAPDOOR
+  # - WAXED_WEATHERED_COPPER_TRAPDOOR
+  # - WAXED_OXIDIZED_COPPER_TRAPDOOR
+
+  # Fence gates
+  # - OAK_FENCE_GATE
+  # - SPRUCE_FENCE_GATE
+  # - BIRCH_FENCE_GATE
+  # - JUNGLE_FENCE_GATE
+  # - ACACIA_FENCE_GATE
+  # - DARK_OAK_FENCE_GATE
+  # - MANGROVE_FENCE_GATE
+  # - CHERRY_FENCE_GATE
+  # - PALE_OAK_FENCE_GATE
+  # - BAMBOO_FENCE_GATE
+  # - CRIMSON_FENCE_GATE
+  # - WARPED_FENCE_GATE
+
+# Extra entities to treat as read-only (EntityType names).
+# MuseumWorld is strictly config-driven:
+# entities are treated as read-only only if they are explicitly listed here.
 readonly-entities:
   - ITEM_FRAME
   - GLOW_ITEM_FRAME
   - ARMOR_STAND
+
+  # Display / interaction entities
+  - TEXT_DISPLAY
+  - ITEM_DISPLAY
+  - BLOCK_DISPLAY
+  - INTERACTION
 
   # Boats / rafts
   - OAK_BOAT
@@ -214,10 +445,11 @@ readonly-entities:
   - COMMAND_BLOCK_MINECART
   - SPAWNER_MINECART
 
-  # Hanging entities (optional, but typical for “museum” worlds)
+  # Hanging entities / decorative entities
   - PAINTING
   - LEASH_KNOT
   - MANNEQUIN
+  - OMINOUS_ITEM_SPAWNER
 
 # Blocks that players can open and view, but cannot modify.
 # These blocks are allowed to open, while item movement is blocked separately.
@@ -239,6 +471,17 @@ view-only-containers:
   - CHISELED_BOOKSHELF
   - COMPOSTER
   - BEACON
+  - CRAFTER
+
+  # Copper chests
+  - COPPER_CHEST
+  - EXPOSED_COPPER_CHEST
+  - WEATHERED_COPPER_CHEST
+  - OXIDIZED_COPPER_CHEST
+  - WAXED_COPPER_CHEST
+  - WAXED_EXPOSED_COPPER_CHEST
+  - WAXED_WEATHERED_COPPER_CHEST
+  - WAXED_OXIDIZED_COPPER_CHEST
 
   # Shulker boxes
   - SHULKER_BOX
@@ -259,6 +502,14 @@ view-only-containers:
   - RED_SHULKER_BOX
   - BLACK_SHULKER_BOX
 
+# MuseumWorld uses bStats for anonymous usage statistics.
+
+# The update checker only prints a notification. It never downloads or installs updates automatically.
+update-checker-enabled: true
+
+# If true, online admins will be notified when a newer version is detected.
+notify-admins-about-updates: true
+
 # These keys are protected during automatic config updates.
 # The plugin will not overwrite them from the default config.
 # Keep "locked-worlds" here to protect your selected worlds.
@@ -267,6 +518,15 @@ view-only-containers:
 protected-config-keys:
   - locked-worlds
   - language
+
+# If true, the plugin will create/update config-reference.yml on startup.
+# This file keeps the default commented configuration for reference.
+# The plugin does not read settings from config-reference.yml.
+create-config-reference: true
+
+# Maximum number of automatic config backups to keep.
+# Set to 0 or a negative number to disable automatic cleanup.
+max-config-backups: 5
 
 # If true, the plugin will create a backup of config.yml before saving automatic config updates.
 backup-config-before-auto-update: true
@@ -278,4 +538,13 @@ backup-config-before-auto-update: true
 # After a successful update, this will automatically return to false.
 update-lists-on-next-reload: false
 
-config-version: 6
+# If true, MuseumWorld will automatically remove invalid Material/EntityType names
+# from active config lists after creating a backup and validation report.
+# This only applies to:
+# - readonly-blocks
+# - view-only-containers
+# - readonly-entities
+# - blocked-entity-types
+auto-clean-invalid-config-values: true
+
+config-version: 7

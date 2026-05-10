@@ -1,10 +1,40 @@
-messages-format-version: 1
+messages-format-version: 2
 
-# Message shown when an inventory modification is blocked (taking/placing items).
-blocked-message: "§6Museum world: §eEnjoy looking around!"
+# General fallback message.
+blocked-message: "§6Museum world: §eThis action is not allowed here."
 
-# Message shown when entity damage is blocked.
-entity-damage-message: "§6Museum world: §cYou cannot damage entities here."
+# Blocks
+block-break-message: "§6Museum world: §cYou cannot break blocks here."
+block-place-message: "§6Museum world: §cYou cannot place blocks here."
+readonly-block-message: "§6Museum world: §eThis block is protected."
 
-# Message shown when friendly mob damage is blocked (if you use that option).
-friendly-damage-message: "§6Museum world: §cYou cannot damage friendly mobs here."
+# Inventory / containers
+inventory-message: "§6Museum world: §eYou can view this container, but you cannot move items."
+item-drop-message: "§6Museum world: §cYou cannot drop items here."
+item-pickup-message: "§6Museum world: §cYou cannot pick up items here."
+
+# Entities / mobs
+entity-damage-message: "§6Museum world: §cYou cannot damage this entity here."
+readonly-entity-message: "§6Museum world: §eThis entity is protected."
+item-frame-message: "§6Museum world: §cYou cannot rotate or remove items from item frames here."
+armor-stand-message: "§6Museum world: §cYou cannot modify armor stands here."
+hanging-entity-message: "§6Museum world: §cYou cannot remove paintings or hanging entities here."
+
+# Vehicles
+vehicle-place-break-message: "§6Museum world: §cYou cannot place or break vehicles here."
+vehicle-enter-message: "§6Museum world: §cYou cannot enter vehicles here."
+
+# Buckets / fire / TNT / portals
+bucket-use-message: "§6Museum world: §cYou cannot use buckets here."
+fire-use-message: "§6Museum world: §cYou cannot use fire here."
+tnt-ignite-message: "§6Museum world: §cYou cannot ignite TNT here."
+portal-create-message: "§6Museum world: §cYou cannot create portals here."
+
+# World state changes
+bone-meal-message: "§6Museum world: §cYou cannot use bone meal here."
+bed-use-message: "§6Museum world: §cYou cannot use beds here."
+
+# Projectiles / special items
+projectile-use-message: "§6Museum world: §cYou cannot use projectiles here."
+lead-use-message: "§6Museum world: §cYou cannot use leads here."
+name-tag-use-message: "§6Museum world: §cYou cannot use name tags here."

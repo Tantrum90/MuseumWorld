@@ -1,5 +1,8 @@
+import org.gradle.jvm.tasks.Jar
+
 plugins {
-    id("java-library")
+    `java-library`
+    id("com.gradleup.shadow") version "9.4.1"
 }
 
 group = providers.gradleProperty("group").get()
@@ -20,10 +23,13 @@ repositories {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:26.1.2.build.+")
+    implementation("org.bstats:bstats-bukkit:3.2.1")
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(25)
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
 }
 
 tasks.withType<JavaCompile> {
@@ -37,18 +43,40 @@ tasks.withType<Javadoc> {
 
 tasks.processResources {
     filteringCharset = "UTF-8"
+
     val props = mapOf(
         "version" to pluginVersion,
         "description" to (project.description ?: ""),
         "channel" to releaseChannel
     )
+
     inputs.properties(props)
+
     filesMatching("paper-plugin.yml") {
         expand(props)
     }
 }
 
-tasks.jar {
+tasks.named<Jar>("shadowJar") {
     archiveBaseName.set("MuseumWorld")
     archiveVersion.set(pluginVersion)
+    archiveClassifier.set("")
+
+    doFirst {
+        try {
+            this.javaClass
+                .getMethod("relocate", String::class.java, String::class.java)
+                .invoke(this, "org.bstats", "mk.tantrum90.museumworld.libs.bstats")
+        } catch (ex: ReflectiveOperationException) {
+            throw GradleException("Could not configure bStats relocation for shadowJar.", ex)
+        }
+    }
+}
+
+tasks.jar {
+    enabled = false
+}
+
+tasks.build {
+    dependsOn(tasks.named("shadowJar"))
 }
